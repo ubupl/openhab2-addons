@@ -5,9 +5,9 @@
 						  xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
 
 	<!-- Sample Thing Type -->
-	<thing-type id="supla-device">
+	<thing-type id="device">
 		<supported-bridge-type-refs>
-			<bridge-type-ref id="jsupla-server-bridge"/>
+			<bridge-type-ref id="server-bridge"/>
 		</supported-bridge-type-refs>
 		<label>Supla Device</label>
 		<description>Generic type for all Supla devices. Channels will be provided by device at runtime</description>
