@@ -90,6 +90,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
                 "Error occurred in server pipe. Message: " + ex.getLocalizedMessage());
     }
 
+    // TODO remove this to JSuplaChannel
     private void errorOccurredInChannel(Channel channel, Throwable ex) {
         logger.error("Error occurred in channel {}", channel, ex);
         updateStatus(OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
