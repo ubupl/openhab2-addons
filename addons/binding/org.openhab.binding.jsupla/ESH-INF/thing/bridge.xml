@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="supla"
+						  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+						  xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+						  xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 org.eclipse.smarthome.thing-description.xsd">
+
+	<bridge-type id="jsupla-server-bridge">
+		<label>jSupla Server</label>
+		<description>
+			This is native Supla server that connects with devices.
+		</description>
+
+		<config-description>
+			<parameter name="port" type="integer" required="true">
+				<label>Server port</label>
+				<description>Port on which server should listen. Common ports are:
+					2016 - port with SSL, used by majority of devices,
+					2015 - port without SSL, often used by home made Arduino/RPi devices.
+					Note: Double check that chosen port is free to use.
+				</description>
+				<default>2016</default>
+			</parameter>
+		</config-description>
+
+	</bridge-type>
+</thing:thing-descriptions>
