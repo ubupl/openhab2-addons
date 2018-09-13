@@ -42,7 +42,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        throw new UnsupportedOperationException("jSuplaHandler.handleCommand(channelUID, command)"); // TODO
+        // TODO
     }
 
     @Override
