@@ -29,6 +29,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
 
     @Override
     public synchronized void accept(final ToServerEntity entity) {
+        logger.trace("{} -> {}", guid, entity);
         if (!authorized) {
             if (entity instanceof RegisterClient) {
                 final RegisterClient registerClient = (RegisterClient) entity;
