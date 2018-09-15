@@ -3,12 +3,12 @@ package org.openhab.binding.jsupla.handler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import org.eclipse.smarthome.config.core.Configuration;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.jsupla.internal.JSuplaConfiguration;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.openhab.binding.jsupla.internal.server.JSuplaChannel;
 import org.slf4j.Logger;
@@ -24,6 +24,7 @@ import pl.grzeslowski.jsupla.server.api.ServerProperties;
 import pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory;
 
 import javax.net.ssl.SSLException;
+import java.math.BigDecimal;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 
@@ -40,18 +41,26 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private Server server;
     private JSuplaDiscoveryService jSuplaDiscoveryService;
 
+    private int port;
+    private int serverAccessId;
+    private char[] serverAccessIdPassword;
+
     public JSuplaCloudBridgeHandler(final Bridge bridge) {
         super(bridge);
     }
 
     @Override
     public void initialize() {
-        final JSuplaConfiguration configuration = getConfigAs(JSuplaConfiguration.class);
         final ServerFactory factory = buildServerFactory();
         try {
-            server = factory.createNewServer(buildServerProperties(configuration));
-            server.getNewChannelsPipe().subscribe(channel -> newChannel(channel, configuration), this::errorOccurredInChannel);
+            final Configuration config = this.getConfig();
+            serverAccessId = ((BigDecimal) config.get("accessId")).intValue();
+            serverAccessIdPassword = ((String) config.get("accessIdPassword")).toCharArray();
+            port = ((BigDecimal) config.get("port")).intValue();
+            server = factory.createNewServer(buildServerProperties(port));
+            server.getNewChannelsPipe().subscribe(channel -> newChannel(channel, serverAccessId, serverAccessIdPassword), this::errorOccurredInChannel);
 
+            logger.debug("jSuplaServer running on port {}", port);
             updateStatus(ONLINE);
         } catch (CertificateException | SSLException ex) {
             logger.error("Cannot start server!", ex);
@@ -69,9 +78,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         );
     }
 
-    private ServerProperties buildServerProperties(JSuplaConfiguration jSuplaConfiguration)
+    private ServerProperties buildServerProperties(int port)
             throws CertificateException, SSLException {
-        return fromList(Arrays.asList(PORT, jSuplaConfiguration.port, SSL_CTX, buildSslContext()));
+        return fromList(Arrays.asList(PORT, port, SSL_CTX, buildSslContext()));
     }
 
     private SslContext buildSslContext() throws CertificateException, SSLException {
@@ -79,9 +88,11 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
     }
 
-    private void newChannel(final Channel channel, JSuplaConfiguration configuration) {
+    private void newChannel(final Channel channel, int serverAccessId, char[] serverAccessIdPassword) {
         logger.debug("New channel {}", channel);
-        channel.getMessagePipe().subscribe(new JSuplaChannel(configuration, jSuplaDiscoveryService), ex -> errorOccurredInChannel(channel, ex));
+        channel.getMessagePipe().subscribe(
+                new JSuplaChannel(serverAccessId, serverAccessIdPassword, jSuplaDiscoveryService),
+                ex -> errorOccurredInChannel(channel, ex));
     }
 
     private void errorOccurredInChannel(Throwable ex) {

@@ -11,7 +11,20 @@
 		</description>
 
 		<config-description>
-			<parameter name="port" type="integer" required="true">
+			<parameter name="serverAccessId" type="integer" required="true" min="1">
+				<label>Server Access ID</label>
+				<description>
+					This is ID that devices will use to register to your server.
+				</description>
+			</parameter>
+			<parameter name="serverAccessIdPassword" type="text" required="true">
+				<context>password</context>
+				<label>Server Access ID Password</label>
+				<description>
+					This is password required to register to your server.
+				</description>
+			</parameter>
+			<parameter name="port" type="integer" required="true" min="1">
 				<label>Server port</label>
 				<description>Port on which server should listen. Common ports are:
 					2016 - port with SSL, used by majority of devices,

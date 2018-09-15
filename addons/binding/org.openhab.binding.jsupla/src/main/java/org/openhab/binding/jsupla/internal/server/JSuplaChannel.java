@@ -1,6 +1,5 @@
 package org.openhab.binding.jsupla.internal.server;
 
-import org.openhab.binding.jsupla.internal.JSuplaConfiguration;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,13 +15,15 @@ import static java.util.Objects.requireNonNull;
 
 public final class JSuplaChannel implements Consumer<ToServerEntity> {
     private final Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
-    private final JSuplaConfiguration configuration;
+    private final int serverAccessId;
+    private final char[] serverAccessIdPassword;
     private final JSuplaDiscoveryService jSuplaDiscoveryService;
     private boolean authorized;
     private String guid;
 
-    public JSuplaChannel(JSuplaConfiguration configuration, JSuplaDiscoveryService jSuplaDiscoveryService) {
-        this.configuration = requireNonNull(configuration);
+    public JSuplaChannel(int serverAccessId, char[] serverAccessIdPassword, JSuplaDiscoveryService jSuplaDiscoveryService) {
+        this.serverAccessId = serverAccessId;
+        this.serverAccessIdPassword = serverAccessIdPassword;
         this.jSuplaDiscoveryService = requireNonNull(jSuplaDiscoveryService);
     }
 
@@ -45,12 +46,10 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
     }
 
     private void authorize(final String guid, final int accessId, final char[] accessIdPassword) {
-        final int serverAccessId = configuration.accessId;
         if (serverAccessId != accessId) {
             logger.debug("Wrong accessId for GUID [{}]; {} != {}", guid, accessId, serverAccessId);
             authorized = false;
         }
-        final char[] serverAccessIdPassword = configuration.accessIdPassword.toCharArray();
         if (!Arrays.equals(serverAccessIdPassword, accessIdPassword)) {
             logger.debug("Wrong accessIdPassword for GUID [{}]", guid);
             authorized = false;
