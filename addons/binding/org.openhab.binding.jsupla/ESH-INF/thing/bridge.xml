@@ -10,6 +10,10 @@
 			This is native Supla server that connects with devices.
 		</description>
 
+		<channels>
+			<channel id="server-devices" typeId="connected-devices"/>
+		</channels>
+
 		<config-description>
 			<parameter name="serverAccessId" type="integer" required="true" min="1">
 				<label>Server Access ID</label>
@@ -36,4 +40,11 @@
 		</config-description>
 
 	</bridge-type>
+
+	<channel-type id="connected-devices" advanced="false">
+		<item-type>Number</item-type>
+		<label>Connected devices</label>
+		<description>Indicates how many devices are connected to this server.</description>
+		<state readOnly="true" min="0"/>
+	</channel-type>
 </thing:thing-descriptions>

@@ -4,6 +4,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.eclipse.smarthome.config.core.Configuration;
+import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
@@ -34,6 +35,7 @@ import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_E
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_PORT;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID_PASSWORD;
+import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONNECTED_DEVICES_CHANNEL_ID;
 import static pl.grzeslowski.jsupla.protocoljava.api.ProtocolJavaContext.PROTOCOL_JAVA_CONTEXT;
 import static pl.grzeslowski.jsupla.server.api.ServerProperties.fromList;
 import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.PORT;
@@ -43,6 +45,8 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private static final Logger logger = LoggerFactory.getLogger(JSuplaCloudBridgeHandler.class);
     private Server server;
     private JSuplaDiscoveryService jSuplaDiscoveryService;
+
+    private int numberOfConnectedDevices = 0;
 
     private int port;
     private int serverAccessId;
@@ -54,6 +58,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void initialize() {
+        updateConnectedDevices();
         final ServerFactory factory = buildServerFactory();
         try {
             final Configuration config = this.getConfig();
@@ -61,7 +66,10 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
             serverAccessIdPassword = ((String) config.get(CONFIG_SERVER_ACCESS_ID_PASSWORD)).toCharArray();
             port = ((BigDecimal) config.get(CONFIG_PORT)).intValue();
             server = factory.createNewServer(buildServerProperties(port));
-            server.getNewChannelsPipe().subscribe(channel -> newChannel(channel, serverAccessId, serverAccessIdPassword), this::errorOccurredInChannel);
+            server.getNewChannelsPipe().subscribe(
+                    this::channelConsumer,
+                    this::errorOccurredInChannel,
+                    this::completedChannel);
 
             logger.debug("jSuplaServer running on port {}", port);
             updateStatus(ONLINE);
@@ -70,6 +78,32 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
             updateStatus(OFFLINE, CONFIGURATION_ERROR,
                     "Cannot start server! " + ex.getLocalizedMessage());
         }
+    }
+
+    private void channelConsumer(Channel channel) {
+        logger.debug("Device connected to {}", toString());
+        changeNumberOfConnectedDevices(1);
+        newChannel(channel, serverAccessId, serverAccessIdPassword);
+    }
+
+    private void errorOccurredInChannel(Throwable ex) {
+        logger.error("Error occurred in server pipe", ex);
+        updateStatus(OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                "Error occurred in server pipe. Message: " + ex.getLocalizedMessage());
+    }
+
+    private void completedChannel() {
+        logger.debug("Device disconnected from {}", toString());
+        changeNumberOfConnectedDevices(-1);
+    }
+
+    private void changeNumberOfConnectedDevices(int delta) {
+        numberOfConnectedDevices += delta;
+        updateConnectedDevices();
+    }
+
+    private void updateConnectedDevices() {
+        updateState(CONNECTED_DEVICES_CHANNEL_ID, new DecimalType(numberOfConnectedDevices));
     }
 
     @SuppressWarnings("unchecked")
@@ -96,12 +130,6 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         channel.getMessagePipe().subscribe(
                 new JSuplaChannel(serverAccessId, serverAccessIdPassword, jSuplaDiscoveryService),
                 ex -> errorOccurredInChannel(channel, ex));
-    }
-
-    private void errorOccurredInChannel(Throwable ex) {
-        logger.error("Error occurred in server pipe", ex);
-        updateStatus(OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                "Error occurred in server pipe. Message: " + ex.getLocalizedMessage());
     }
 
     // TODO remove this to JSuplaChannel
@@ -131,5 +159,13 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     public void setJSuplaDiscoveryService(final JSuplaDiscoveryService jSuplaDiscoveryService) {
         logger.trace("setJSuplaDiscoveryService#{}", jSuplaDiscoveryService.hashCode());
         this.jSuplaDiscoveryService = jSuplaDiscoveryService;
+    }
+
+    @Override
+    public String toString() {
+        return "JSuplaCloudBridgeHandler{" +
+                       "port=" + port +
+                       ", serverAccessId=" + serverAccessId +
+                       "} " + super.toString();
     }
 }
