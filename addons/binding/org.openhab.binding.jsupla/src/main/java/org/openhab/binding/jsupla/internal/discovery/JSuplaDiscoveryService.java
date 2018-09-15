@@ -24,6 +24,7 @@ public class JSuplaDiscoveryService extends AbstractDiscoveryService {
     @Override
     protected void startScan() {
         logger.trace("Active scan started, but there is no active scan for jSupla ;)");
+        stopScan();
     }
 
     public void addSuplaDevice(String guid, String name) {
