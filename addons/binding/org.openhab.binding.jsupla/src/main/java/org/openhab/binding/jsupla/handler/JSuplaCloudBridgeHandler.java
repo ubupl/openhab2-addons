@@ -31,6 +31,9 @@ import java.util.Arrays;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
+import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_PORT;
+import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID;
+import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID_PASSWORD;
 import static pl.grzeslowski.jsupla.protocoljava.api.ProtocolJavaContext.PROTOCOL_JAVA_CONTEXT;
 import static pl.grzeslowski.jsupla.server.api.ServerProperties.fromList;
 import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.PORT;
@@ -54,9 +57,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         final ServerFactory factory = buildServerFactory();
         try {
             final Configuration config = this.getConfig();
-            serverAccessId = ((BigDecimal) config.get("accessId")).intValue();
-            serverAccessIdPassword = ((String) config.get("accessIdPassword")).toCharArray();
-            port = ((BigDecimal) config.get("port")).intValue();
+            serverAccessId = ((BigDecimal) config.get(CONFIG_SERVER_ACCESS_ID)).intValue();
+            serverAccessIdPassword = ((String) config.get(CONFIG_SERVER_ACCESS_ID_PASSWORD)).toCharArray();
+            port = ((BigDecimal) config.get(CONFIG_PORT)).intValue();
             server = factory.createNewServer(buildServerProperties(port));
             server.getNewChannelsPipe().subscribe(channel -> newChannel(channel, serverAccessId, serverAccessIdPassword), this::errorOccurredInChannel);
 
