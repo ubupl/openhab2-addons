@@ -41,7 +41,7 @@ public class jSuplaBindingConstants {
     public static final String SWITCH_CHANNEL = "switch-channel";
 
     // jSuplaServer constants
-    public static final int DEVICE_TIMEOUT_MS = 100;
+    public static final int DEVICE_TIMEOUT_SEC = 10;
     public static final int DEFAULT_PORT = 2016;
     public static final String CONFIG_SERVER_ACCESS_ID = "serverAccessId";
     public static final String CONFIG_SERVER_ACCESS_ID_PASSWORD = "serverAccessIdPassword";
