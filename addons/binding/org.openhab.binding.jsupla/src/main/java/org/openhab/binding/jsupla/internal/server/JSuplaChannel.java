@@ -3,11 +3,17 @@ package org.openhab.binding.jsupla.internal.server;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.Timeval;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.PingServer;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.SetActivityTimeout;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDevice;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDeviceC;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.sd.RegisterDeviceResult;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.sdc.PingServerResultClient;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.sdc.SetActivityTimeoutResult;
 import pl.grzeslowski.jsupla.protocoljava.api.types.ToServerEntity;
 import pl.grzeslowski.jsupla.server.api.Channel;
+import reactor.core.publisher.Flux;
 
 import java.util.function.Consumer;
 
@@ -18,7 +24,7 @@ import static pl.grzeslowski.jsupla.protocol.api.ResultCode.SUPLA_RESULTCODE_TRU
 import static reactor.core.publisher.Flux.just;
 
 public final class JSuplaChannel implements Consumer<ToServerEntity> {
-    private final Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
+    private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
     private final int serverAccessId;
     private final char[] serverAccessIdPassword;
     private final JSuplaDiscoveryService jSuplaDiscoveryService;
@@ -43,6 +49,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
             if (entity instanceof RegisterDevice) {
                 final RegisterDevice registerDevice = (RegisterDevice) entity;
                 guid = registerDevice.getGuid();
+                logger = LoggerFactory.getLogger(this.getClass().getName() + "." + guid);
                 authorize(guid, registerDevice.getLocationId(), registerDevice.getLocationPassword());
                 if (authorized) {
                     sendDeviceToDiscoveryInbox(registerDevice);
@@ -54,8 +61,34 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
                 logger.debug("Device in channel is not authorized in but is also not sending RegisterClient entity! {}",
                         entity);
             }
-            return;
+        } else if (entity instanceof SetActivityTimeout) {
+            setActivityTimeout((SetActivityTimeout) entity);
+        } else if (entity instanceof PingServer) {
+            pingServer((PingServer) entity);
+        } else {
+            logger.debug("Do not handling this command: {}", entity);
         }
+    }
+
+    private void setActivityTimeout(final SetActivityTimeout timeout) {
+        final SetActivityTimeoutResult data = new SetActivityTimeoutResult(
+                100,
+                80,
+                120);
+        channel.write(Flux.just(data))
+                .subscribe(date -> logger.trace("setActivityTimeout {}", date.format(ISO_DATE_TIME)));
+    }
+
+    private void pingServer(final PingServer entity) {
+        logger.trace("Got ping server at {}s {}ms", entity.getTimeval().getSeconds(), entity.getTimeval().getMilliseconds());
+        final PingServerResultClient response = new PingServerResultClient(
+                new Timeval(
+                        entity.getTimeval().getSeconds() + 1,
+                        entity.getTimeval().getMilliseconds()
+                )
+        );
+        channel.write(just(response))
+                .subscribe(date -> logger.trace("pingServer {}", date.format(ISO_DATE_TIME)));
     }
 
     private void sendRegistrationConfirmation() {
