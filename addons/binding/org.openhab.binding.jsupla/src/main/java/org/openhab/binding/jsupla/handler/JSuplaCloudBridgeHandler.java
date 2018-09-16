@@ -4,6 +4,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.eclipse.smarthome.config.core.Configuration;
+import org.eclipse.smarthome.core.common.ThreadPoolManager;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -31,6 +32,7 @@ import javax.net.ssl.SSLException;
 import java.math.BigDecimal;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
@@ -46,6 +48,7 @@ import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.SSL_CTX;
 
 public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private static final Logger logger = LoggerFactory.getLogger(JSuplaCloudBridgeHandler.class);
+    private ScheduledExecutorService scheduledPool;
     private Server server;
     private JSuplaDiscoveryService jSuplaDiscoveryService;
 
@@ -62,6 +65,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     @Override
     public void initialize() {
         updateConnectedDevices();
+        scheduledPool = ThreadPoolManager.getScheduledPool(this.getClass() + "." + port);
         final ServerFactory factory = buildServerFactory();
         try {
             final Configuration config = this.getConfig();
@@ -132,7 +136,11 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private void newChannel(final Channel channel, int serverAccessId, char[] serverAccessIdPassword) {
         logger.debug("New channel {}", channel);
         channel.getMessagePipe().subscribe(
-                new JSuplaChannel(serverAccessId, serverAccessIdPassword, jSuplaDiscoveryService, channel),
+                new JSuplaChannel(serverAccessId,
+                        serverAccessIdPassword,
+                        jSuplaDiscoveryService,
+                        channel,
+                        scheduledPool),
                 ex -> errorOccurredInChannel(channel, ex));
     }
 

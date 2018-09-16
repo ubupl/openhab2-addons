@@ -52,5 +52,6 @@ Import-Package:
  pl.grzeslowski.jsupla.protocoljava.api,
  org.eclipse.smarthome.config.discovery,
  org.osgi.framework,
- com.google.common.base
+ com.google.common.base,
+ org.eclipse.smarthome.core.common
 Service-Component: OSGI-INF/*.xml

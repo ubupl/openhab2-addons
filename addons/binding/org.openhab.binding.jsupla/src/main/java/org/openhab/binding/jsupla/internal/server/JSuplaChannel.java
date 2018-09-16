@@ -4,7 +4,6 @@ import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.Timeval;
-import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.PingServer;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.SetActivityTimeout;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDevice;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDeviceC;
@@ -15,31 +14,43 @@ import pl.grzeslowski.jsupla.protocoljava.api.types.ToServerEntity;
 import pl.grzeslowski.jsupla.server.api.Channel;
 import reactor.core.publisher.Flux;
 
+import java.util.Date;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static java.util.Objects.requireNonNull;
+import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEVICE_TIMEOUT_MS;
 import static pl.grzeslowski.jsupla.protocol.api.ResultCode.SUPLA_RESULTCODE_TRUE;
 import static reactor.core.publisher.Flux.just;
 
 public final class JSuplaChannel implements Consumer<ToServerEntity> {
+    private final long createdTime;
     private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
     private final int serverAccessId;
     private final char[] serverAccessIdPassword;
     private final JSuplaDiscoveryService jSuplaDiscoveryService;
     private final Channel channel;
+    private final ScheduledExecutorService scheduledPool;
     private boolean authorized;
     private String guid;
+    private AtomicReference<ScheduledFuture<?>> pingSchedule = new AtomicReference<>();
 
-    public JSuplaChannel(int serverAccessId,
-                         char[] serverAccessIdPassword,
-                         JSuplaDiscoveryService jSuplaDiscoveryService,
-                         final Channel channel) {
+    public JSuplaChannel(final int serverAccessId,
+                         final char[] serverAccessIdPassword,
+                         final JSuplaDiscoveryService jSuplaDiscoveryService,
+                         final Channel channel,
+                         final ScheduledExecutorService scheduledPool) {
+        this.createdTime = new Date().getTime();
         this.serverAccessId = serverAccessId;
         this.serverAccessIdPassword = serverAccessIdPassword;
         this.jSuplaDiscoveryService = requireNonNull(jSuplaDiscoveryService);
         this.channel = channel;
+        this.scheduledPool = requireNonNull(scheduledPool);
     }
 
     @Override
@@ -62,33 +73,32 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
                         entity);
             }
         } else if (entity instanceof SetActivityTimeout) {
-            setActivityTimeout((SetActivityTimeout) entity);
-        } else if (entity instanceof PingServer) {
-            pingServer((PingServer) entity);
+            setActivityTimeout();
         } else {
             logger.debug("Do not handling this command: {}", entity);
         }
     }
 
-    private void setActivityTimeout(final SetActivityTimeout timeout) {
+    private void setActivityTimeout() {
         final SetActivityTimeoutResult data = new SetActivityTimeoutResult(
-                100,
-                80,
-                120);
+                DEVICE_TIMEOUT_MS,
+                DEVICE_TIMEOUT_MS - 20,
+                DEVICE_TIMEOUT_MS + 20);
         channel.write(Flux.just(data))
                 .subscribe(date -> logger.trace("setActivityTimeout {}", date.format(ISO_DATE_TIME)));
+        final ScheduledFuture<?> pingSchedule = scheduledPool.scheduleAtFixedRate(
+                this::sendPing,
+                DEVICE_TIMEOUT_MS,
+                DEVICE_TIMEOUT_MS,
+                TimeUnit.MILLISECONDS);
+        this.pingSchedule.set(pingSchedule);
     }
 
-    private void pingServer(final PingServer entity) {
-        logger.trace("Got ping server at {}s {}ms", entity.getTimeval().getSeconds(), entity.getTimeval().getMilliseconds());
-        final PingServerResultClient response = new PingServerResultClient(
-                new Timeval(
-                        entity.getTimeval().getSeconds() + 1,
-                        entity.getTimeval().getMilliseconds()
-                )
-        );
+    private void sendPing() {
+        final int seconds = (int) (new Date().getTime() - createdTime);
+        final PingServerResultClient response = new PingServerResultClient(new Timeval(seconds, 0));
         channel.write(just(response))
-                .subscribe(date -> logger.trace("pingServer {}", date.format(ISO_DATE_TIME)));
+                .subscribe(date -> logger.trace("sendPing {}s {}", seconds, date.format(ISO_DATE_TIME)));
     }
 
     private void sendRegistrationConfirmation() {
