@@ -17,7 +17,10 @@ import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.protocol.impl.calltypes.CallTypeParserImpl;
 import pl.grzeslowski.jsupla.protocol.impl.decoders.DecoderFactoryImpl;
 import pl.grzeslowski.jsupla.protocol.impl.decoders.PrimitiveDecoderImpl;
+import pl.grzeslowski.jsupla.protocol.impl.encoders.EncoderFactoryImpl;
+import pl.grzeslowski.jsupla.protocol.impl.encoders.PrimitiveEncoderImpl;
 import pl.grzeslowski.jsupla.protocoljava.api.parsers.Parser;
+import pl.grzeslowski.jsupla.protocoljava.api.serializers.Serializer;
 import pl.grzeslowski.jsupla.server.api.Channel;
 import pl.grzeslowski.jsupla.server.api.Server;
 import pl.grzeslowski.jsupla.server.api.ServerFactory;
@@ -111,8 +114,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         return new NettyServerFactory(
                 new CallTypeParserImpl(),
                 new DecoderFactoryImpl(new PrimitiveDecoderImpl()),
-                PROTOCOL_JAVA_CONTEXT.getService(Parser.class)
-        );
+                new EncoderFactoryImpl(new PrimitiveEncoderImpl()),
+                PROTOCOL_JAVA_CONTEXT.getService(Parser.class),
+                PROTOCOL_JAVA_CONTEXT.getService(Serializer.class));
     }
 
     private ServerProperties buildServerProperties(int port)
@@ -128,13 +132,13 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private void newChannel(final Channel channel, int serverAccessId, char[] serverAccessIdPassword) {
         logger.debug("New channel {}", channel);
         channel.getMessagePipe().subscribe(
-                new JSuplaChannel(serverAccessId, serverAccessIdPassword, jSuplaDiscoveryService),
+                new JSuplaChannel(serverAccessId, serverAccessIdPassword, jSuplaDiscoveryService, channel),
                 ex -> errorOccurredInChannel(channel, ex));
     }
 
     // TODO remove this to JSuplaChannel
     private void errorOccurredInChannel(Channel channel, Throwable ex) {
-        logger.error("Error occurred in channel {}", channel, ex);
+        logger.error("Error occurred in channel {}. ", channel, ex);
         updateStatus(OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                 "Error occurred in channel pipe. " + ex.getLocalizedMessage());
     }
