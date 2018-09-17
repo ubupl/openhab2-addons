@@ -177,6 +177,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
         if (suplaDevice.isPresent()) {
             final SuplaDeviceHandler suplaDeviceHandler = suplaDevice.get();
             suplaDeviceHandler.setChannels(registerDevice.getChannels());
+            suplaDeviceHandler.setSuplaChannel(channel);
         } else {
             logger.debug("Thing not found. Binding of channels will happen later...");
             scheduledPool.schedule(

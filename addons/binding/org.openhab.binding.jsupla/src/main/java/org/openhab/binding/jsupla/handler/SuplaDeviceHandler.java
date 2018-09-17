@@ -33,6 +33,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.eclipse.smarthome.core.thing.ThingStatus.UNINITIALIZED;
+import static org.eclipse.smarthome.core.thing.ThingStatusDetail.BRIDGE_UNINITIALIZED;
+
 /**
  * The {@link SuplaDeviceHandler} is responsible for handling commands, which are
  * sent to one of the channels.
@@ -42,6 +45,9 @@ import java.util.stream.Collectors;
 @NonNullByDefault
 public class SuplaDeviceHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(SuplaDeviceHandler.class);
+
+    private pl.grzeslowski.jsupla.server.api.Channel suplaChannel;
+    private final Object channelLock = new Object();
 
     @Nullable
     private JSuplaConfiguration config;
@@ -59,16 +65,29 @@ public class SuplaDeviceHandler extends BaseThingHandler {
     public void initialize() {
         config = getConfigAs(JSuplaConfiguration.class);
 
-        // TODO: Initialize the thing. If done set status to ONLINE to indicate proper working.
-        // Long running initialization should be done asynchronously in background.
-        updateStatus(ThingStatus.ONLINE);
+        if (getBridge() == null) {
+            logger.debug("No bridge for thing with UID {}", thing.getUID());
+            updateStatus(
+                    UNINITIALIZED,
+                    BRIDGE_UNINITIALIZED,
+                    "There is no bridge for this thing. Remove it and add it again.");
+            return;
+        }
 
-        // Note: When initialization can NOT be done set the status with more details for further
-        // analysis. See also class ThingStatusDetail for all available status details.
-        // Add a description to give user information to understand why thing does not work
-        // as expected. E.g.
-        // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-        // "Can not access device as username and/or password are invalid");
+        synchronized (channelLock) {
+            if (suplaChannel == null) {
+                updateStatus(UNINITIALIZED, BRIDGE_UNINITIALIZED, "Channel in server is not yet opened");
+            } else {
+                updateStatus(ThingStatus.ONLINE);
+            }
+        }
+    }
+
+    public void setSuplaChannel(final pl.grzeslowski.jsupla.server.api.Channel suplaChannel) {
+        synchronized (channelLock) {
+            this.suplaChannel = suplaChannel;
+            updateStatus(ThingStatus.ONLINE);
+        }
     }
 
     @SuppressWarnings("deprecation")
