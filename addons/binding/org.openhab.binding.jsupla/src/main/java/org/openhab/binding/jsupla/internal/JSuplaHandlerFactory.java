@@ -25,6 +25,7 @@ import org.openhab.binding.jsupla.handler.JSuplaCloudBridgeHandler;
 import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,8 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPPORTED_THING_
 @NonNullByDefault
 public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(JSuplaHandlerFactory.class);
-
+    private SuplaDeviceRegistry suplaDeviceRegistry;
+    
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID);
@@ -55,15 +57,22 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (SUPLA_DEVICE_TYPE.equals(thingTypeUID)) {
-            return new SuplaDeviceHandler(thing);
+            final SuplaDeviceHandler suplaDeviceHandler = new SuplaDeviceHandler(thing);
+            suplaDeviceRegistry.addSuplaDevice(suplaDeviceHandler);
+            return suplaDeviceHandler;
         } else if (JSUPLA_SERVER_TYPE.equals(thingTypeUID)) {
-            JSuplaCloudBridgeHandler bridgeHandler = new JSuplaCloudBridgeHandler((Bridge) thing);
+            JSuplaCloudBridgeHandler bridgeHandler = new JSuplaCloudBridgeHandler((Bridge) thing, suplaDeviceRegistry);
             final JSuplaDiscoveryService discovery = registerThingDiscovery(bridgeHandler);
             bridgeHandler.setJSuplaDiscoveryService(discovery);
             return bridgeHandler;
         }
 
         return null;
+    }
+
+    @Reference
+    public void setSuplaDeviceRegistry(final SuplaDeviceRegistry suplaDeviceRegistry) {
+        this.suplaDeviceRegistry = suplaDeviceRegistry;
     }
 
     private synchronized JSuplaDiscoveryService registerThingDiscovery(JSuplaCloudBridgeHandler bridgeHandler) {

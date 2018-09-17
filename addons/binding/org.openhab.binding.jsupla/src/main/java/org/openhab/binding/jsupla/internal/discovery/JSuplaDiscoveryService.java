@@ -1,5 +1,6 @@
 package org.openhab.binding.jsupla.internal.discovery;
 
+import com.google.common.collect.ImmutableMap;
 import org.eclipse.smarthome.config.discovery.AbstractDiscoveryService;
 import org.eclipse.smarthome.config.discovery.DiscoveryResult;
 import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
@@ -8,7 +9,10 @@ import org.openhab.binding.jsupla.handler.JSuplaCloudBridgeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 import static java.util.Objects.requireNonNull;
+import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_GUID;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_TYPE;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
@@ -33,10 +37,14 @@ public class JSuplaDiscoveryService extends AbstractDiscoveryService {
         ThingUID thingUID = new ThingUID(SUPLA_DEVICE_TYPE, bridgeUID, String.valueOf(guid));
         final DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID)
                                                         .withBridge(bridgeUID)
-//                                                      .withProperties(properties) // TODO
+                                                        .withProperties(buildProperties(guid))
                                                         .withLabel(String.format("%s (%s)", name, guid))
                                                         .build();
         logger.debug("Discovered thing with GUID [{}]", guid);
         thingDiscovered(discoveryResult);
+    }
+
+    private Map<String, Object> buildProperties(final String guid) {
+        return ImmutableMap.of(SUPLA_DEVICE_GUID, guid);
     }
 }

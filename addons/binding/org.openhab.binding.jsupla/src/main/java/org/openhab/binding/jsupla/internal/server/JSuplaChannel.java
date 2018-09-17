@@ -1,5 +1,7 @@
 package org.openhab.binding.jsupla.internal.server;
 
+import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
+import org.openhab.binding.jsupla.internal.SuplaDeviceRegistry;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,7 @@ import pl.grzeslowski.jsupla.protocoljava.api.types.ToServerEntity;
 import pl.grzeslowski.jsupla.server.api.Channel;
 import reactor.core.publisher.Flux;
 
-import java.util.Date;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -26,12 +28,13 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.time.Instant.now;
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEVICE_TIMEOUT_SEC;
 import static pl.grzeslowski.jsupla.protocol.api.ResultCode.SUPLA_RESULTCODE_TRUE;
 import static reactor.core.publisher.Flux.just;
 
 public final class JSuplaChannel implements Consumer<ToServerEntity> {
-    private final long createdTime;
+    private final SuplaDeviceRegistry suplaDeviceRegistry;
     private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
     private final int serverAccessId;
     private final char[] serverAccessIdPassword;
@@ -47,13 +50,14 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
                          final char[] serverAccessIdPassword,
                          final JSuplaDiscoveryService jSuplaDiscoveryService,
                          final Channel channel,
-                         final ScheduledExecutorService scheduledPool) {
-        this.createdTime = new Date().getTime();
+                         final ScheduledExecutorService scheduledPool,
+                         final SuplaDeviceRegistry suplaDeviceRegistry) {
         this.serverAccessId = serverAccessId;
         this.serverAccessIdPassword = serverAccessIdPassword;
         this.jSuplaDiscoveryService = requireNonNull(jSuplaDiscoveryService);
         this.channel = channel;
         this.scheduledPool = requireNonNull(scheduledPool);
+        this.suplaDeviceRegistry = requireNonNull(suplaDeviceRegistry);
     }
 
     @Override
@@ -69,6 +73,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
                 if (authorized) {
                     sendDeviceToDiscoveryInbox(registerDevice);
                     sendRegistrationConfirmation();
+                    bindToThingHandler(registerDevice);
                 } else {
                     logger.debug("Authorization failed for GUID {}", guid);
                 }
@@ -167,6 +172,20 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
         jSuplaDiscoveryService.addSuplaDevice(registerClient.getGuid(), name);
     }
 
+    private void bindToThingHandler(final RegisterDevice registerDevice) {
+        final Optional<SuplaDeviceHandler> suplaDevice = suplaDeviceRegistry.getSuplaDevice(guid);
+        if (suplaDevice.isPresent()) {
+            final SuplaDeviceHandler suplaDeviceHandler = suplaDevice.get();
+            suplaDeviceHandler.setChannels(registerDevice.getChannels());
+        } else {
+            logger.debug("Thing not found. Binding of channels will happen later...");
+            scheduledPool.schedule(
+                    () -> bindToThingHandler(registerDevice),
+                    DEVICE_TIMEOUT_SEC,
+                    SECONDS);
+        }
+    }
+    
     @Override
     public String toString() {
         return "JSuplaChannel{" +

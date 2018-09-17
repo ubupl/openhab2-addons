@@ -28,7 +28,7 @@ import java.util.Set;
 @NonNullByDefault
 public class jSuplaBindingConstants {
 
-    private static final String BINDING_ID = "jsupla";
+    public static final String BINDING_ID = "jsupla";
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID SUPLA_DEVICE_TYPE = new ThingTypeUID(BINDING_ID, "device");
@@ -40,6 +40,9 @@ public class jSuplaBindingConstants {
     public static final String LIGHT_CHANNEL = "light-channel";
     public static final String SWITCH_CHANNEL = "switch-channel";
 
+    // supla device
+    public static final String SUPLA_DEVICE_GUID = "jsupla-device-guid";
+    
     // jSuplaServer constants
     public static final int DEVICE_TIMEOUT_SEC = 10;
     public static final int DEFAULT_PORT = 2016;
@@ -47,4 +50,15 @@ public class jSuplaBindingConstants {
     public static final String CONFIG_SERVER_ACCESS_ID_PASSWORD = "serverAccessIdPassword";
     public static final String CONFIG_PORT = "port";
     public static final String CONNECTED_DEVICES_CHANNEL_ID = "server-devices";
+
+    public static class Channels {
+        public static final String LIGHT_CHANNEL_ID = "light-channel";
+        public static final String SWITCH_CHANNEL_ID = "switch-channel";
+        public static final String DECIMAL_CHANNEL_ID = "decimal-channel";
+        public static final String RGB_CHANNEL_ID = "rgb-channel";
+        public static final String ROLLER_SHUTTER_CHANNEL_ID = "roller-shutter-channel";
+        public static final String TEMPERATURE_CHANNEL_ID = "temperature-channel";
+        public static final String TEMPERATURE_AND_HUMIDITY_CHANNEL_ID = "temperature-and-humidity-channel";
+        public static final String UNKNOWN_CHANNEL_ID = "unknown-channel";
+    }
 }

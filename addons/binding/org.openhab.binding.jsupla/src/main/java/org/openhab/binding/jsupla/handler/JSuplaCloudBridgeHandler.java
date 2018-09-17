@@ -11,6 +11,7 @@ import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.openhab.binding.jsupla.internal.SuplaDeviceRegistry;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.openhab.binding.jsupla.internal.server.JSuplaChannel;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.SSL_CTX;
 
 public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private static final Logger logger = LoggerFactory.getLogger(JSuplaCloudBridgeHandler.class);
+    private final SuplaDeviceRegistry suplaDeviceRegistry;
     private ScheduledExecutorService scheduledPool;
     private Server server;
     private JSuplaDiscoveryService jSuplaDiscoveryService;
@@ -58,8 +60,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private int serverAccessId;
     private char[] serverAccessIdPassword;
 
-    public JSuplaCloudBridgeHandler(final Bridge bridge) {
+    public JSuplaCloudBridgeHandler(final Bridge bridge, final SuplaDeviceRegistry suplaDeviceRegistry) {
         super(bridge);
+        this.suplaDeviceRegistry = suplaDeviceRegistry;
     }
 
     @Override
@@ -140,7 +143,8 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
                         serverAccessIdPassword,
                         jSuplaDiscoveryService,
                         channel,
-                        scheduledPool),
+                        scheduledPool,
+                        suplaDeviceRegistry),
                 ex -> errorOccurredInChannel(channel, ex));
     }
 
