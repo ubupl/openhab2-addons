@@ -1,5 +1,6 @@
 package org.openhab.binding.jsupla.internal.server;
 
+import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
 import org.openhab.binding.jsupla.internal.SuplaDeviceRegistry;
@@ -130,6 +131,8 @@ public final class JSuplaChannel {
             logger.debug("Device {} is dead. Need to kill it!", guid);
             channel.close();
             this.pingSchedule.get().cancel(false);
+            suplaDeviceHandler.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.NONE,
+                    "Device do not response on pings.");
         }
     }
 
