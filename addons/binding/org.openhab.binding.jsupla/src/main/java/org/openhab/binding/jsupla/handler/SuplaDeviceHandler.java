@@ -54,6 +54,7 @@ import static java.lang.String.valueOf;
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.BRIDGE_UNINITIALIZED;
+import static org.eclipse.smarthome.core.thing.ThingStatusDetail.NONE;
 import static reactor.core.publisher.Flux.just;
 
 /**
@@ -154,7 +155,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
 
         synchronized (channelLock) {
             if (suplaChannel == null) {
-                updateStatus(OFFLINE, BRIDGE_UNINITIALIZED, "Channel in server is not yet opened");
+                updateStatus(OFFLINE, NONE, "Channel in server is not yet opened");
             } else {
                 updateStatus(ThingStatus.ONLINE);
             }
