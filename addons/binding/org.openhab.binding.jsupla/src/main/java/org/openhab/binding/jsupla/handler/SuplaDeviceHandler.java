@@ -88,6 +88,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         }
         final ChannelValue channelValue = buildChannelValue(command);
         if (channelValue == null) {
+            logger.debug("Don't know how to handle command {} sent to {}", command, channelUID);
             return;
         }
         final ChannelNewValue channelNewValue = new ChannelNewValue(
