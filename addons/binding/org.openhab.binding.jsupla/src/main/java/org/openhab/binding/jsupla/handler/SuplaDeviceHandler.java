@@ -31,7 +31,6 @@ import org.eclipse.smarthome.core.types.State;
 import org.javatuples.Pair;
 import org.openhab.binding.jsupla.internal.ChannelCallback;
 import org.openhab.binding.jsupla.internal.ChannelValueToState;
-import org.openhab.binding.jsupla.internal.JSuplaConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.ChannelValue;
@@ -71,9 +70,6 @@ public class SuplaDeviceHandler extends BaseThingHandler {
     private final Object channelLock = new Object();
 
     private final Map<ChannelUID, Integer> channelUIDS = new HashMap<>();
-
-    @Nullable
-    private JSuplaConfiguration config;
 
     public SuplaDeviceHandler(Thing thing) {
         super(thing);
@@ -143,8 +139,6 @@ public class SuplaDeviceHandler extends BaseThingHandler {
 
     @Override
     public void initialize() {
-        config = getConfigAs(JSuplaConfiguration.class);
-
         if (getBridge() == null) {
             logger.debug("No bridge for thing with UID {}", thing.getUID());
             updateStatus(
