@@ -21,8 +21,6 @@ import pl.grzeslowski.jsupla.protocol.impl.decoders.DecoderFactoryImpl;
 import pl.grzeslowski.jsupla.protocol.impl.decoders.PrimitiveDecoderImpl;
 import pl.grzeslowski.jsupla.protocol.impl.encoders.EncoderFactoryImpl;
 import pl.grzeslowski.jsupla.protocol.impl.encoders.PrimitiveEncoderImpl;
-import pl.grzeslowski.jsupla.protocoljava.api.parsers.Parser;
-import pl.grzeslowski.jsupla.protocoljava.api.serializers.Serializer;
 import pl.grzeslowski.jsupla.server.api.Channel;
 import pl.grzeslowski.jsupla.server.api.Server;
 import pl.grzeslowski.jsupla.server.api.ServerFactory;
@@ -42,7 +40,6 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_PORT;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID_PASSWORD;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONNECTED_DEVICES_CHANNEL_ID;
-import static pl.grzeslowski.jsupla.protocoljava.api.ProtocolJavaContext.PROTOCOL_JAVA_CONTEXT;
 import static pl.grzeslowski.jsupla.server.api.ServerProperties.fromList;
 import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.PORT;
 import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.SSL_CTX;
@@ -121,9 +118,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         return new NettyServerFactory(
                 new CallTypeParserImpl(),
                 new DecoderFactoryImpl(new PrimitiveDecoderImpl()),
-                new EncoderFactoryImpl(new PrimitiveEncoderImpl()),
-                PROTOCOL_JAVA_CONTEXT.getService(Parser.class),
-                PROTOCOL_JAVA_CONTEXT.getService(Serializer.class));
+                new EncoderFactoryImpl(new PrimitiveEncoderImpl()));
     }
 
     private ServerProperties buildServerProperties(int port)

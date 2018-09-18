@@ -22,7 +22,8 @@ Export-Package:
  org.reactivestreams,
  pl.grzeslowski.jsupla.protocoljava.api.types,
  pl.grzeslowski.jsupla.protocoljava.api.entities.cs,
- pl.grzeslowski.jsupla.protocoljava.api
+ pl.grzeslowski.jsupla.protocoljava.api,
+ org.javatuples
 Import-Package: 
  org.openhab.binding.jsupla,
  org.openhab.binding.jsupla.handler,
@@ -53,5 +54,6 @@ Import-Package:
  org.eclipse.smarthome.config.discovery,
  org.osgi.framework,
  com.google.common.base,
- org.eclipse.smarthome.core.common
+ org.eclipse.smarthome.core.common,
+ org.javatuples
 Service-Component: OSGI-INF/*.xml

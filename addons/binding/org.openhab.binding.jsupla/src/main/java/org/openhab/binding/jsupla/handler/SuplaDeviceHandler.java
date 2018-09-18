@@ -26,7 +26,10 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.State;
+import org.javatuples.Pair;
 import org.openhab.binding.jsupla.internal.ChannelCallback;
+import org.openhab.binding.jsupla.internal.ChannelValueToState;
 import org.openhab.binding.jsupla.internal.JSuplaConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +49,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.lang.String.valueOf;
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
-import static org.eclipse.smarthome.core.thing.ThingStatus.UNINITIALIZED;
+import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.BRIDGE_UNINITIALIZED;
 import static reactor.core.publisher.Flux.just;
 
@@ -141,7 +145,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         if (getBridge() == null) {
             logger.debug("No bridge for thing with UID {}", thing.getUID());
             updateStatus(
-                    UNINITIALIZED,
+                    OFFLINE,
                     BRIDGE_UNINITIALIZED,
                     "There is no bridge for this thing. Remove it and add it again.");
             return;
@@ -149,7 +153,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
 
         synchronized (channelLock) {
             if (suplaChannel == null) {
-                updateStatus(UNINITIALIZED, BRIDGE_UNINITIALIZED, "Channel in server is not yet opened");
+                updateStatus(OFFLINE, BRIDGE_UNINITIALIZED, "Channel in server is not yet opened");
             } else {
                 updateStatus(ThingStatus.ONLINE);
             }
@@ -172,11 +176,38 @@ public class SuplaDeviceHandler extends BaseThingHandler {
                                                .map(this::createChannel)
                                                .collect(Collectors.toList());
         updateChannels(channels);
+        deviceChannels.getChannels()
+                .stream()
+                .map(this::channelForUpdate)
+                .forEach(pair -> updateState(pair.getValue0(), pair.getValue1()));
+    }
+
+    private Pair<ChannelUID, State> channelForUpdate(final DeviceChannel deviceChannel) {
+        return Pair.with(
+                createChannelUid(deviceChannel.getNumber()),
+                findState(deviceChannel.getValue())
+        );
+    }
+
+    private ChannelUID createChannelUid(final int channelNumber) {
+        return new ChannelUID(getThing().getUID(), valueOf(channelNumber));
+    }
+
+    private State findState(ChannelValue value) {
+        final ChannelValueSwitch<State> valueSwitch = new ChannelValueSwitch<>(new ChannelValueToState());
+        return valueSwitch.doSwitch(value);
+    }
+
+    public void updateStatus(final int channelNumber, final ChannelValue channelValue) {
+        final ChannelUID channelUid = createChannelUid(channelNumber);
+        final State state = findState(channelValue);
+        updateState(channelUid, state);
     }
 
     @SuppressWarnings("deprecation")
     private Channel createChannel(final DeviceChannel deviceChannel) {
-        final ChannelValueSwitch<Channel> channelValueSwitch = new ChannelValueSwitch<>(new ChannelCallback(getThing().getUID()));
+        final ChannelCallback channelCallback = new ChannelCallback(getThing().getUID(), deviceChannel.getNumber());
+        final ChannelValueSwitch<Channel> channelValueSwitch = new ChannelValueSwitch<>(channelCallback);
         final Channel channel = channelValueSwitch.doSwitch(deviceChannel.getValue());
         channelUIDS.put(channel.getUID(), deviceChannel.getNumber());
         return channel;

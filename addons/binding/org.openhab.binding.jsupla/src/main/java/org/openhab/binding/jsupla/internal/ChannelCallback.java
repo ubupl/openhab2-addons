@@ -17,6 +17,7 @@ import pl.grzeslowski.jsupla.protocoljava.api.channels.values.TemperatureAndHumi
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.TemperatureValue;
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.UnknownValue;
 
+import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.DECIMAL_CHANNEL_ID;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.RGB_CHANNEL_ID;
@@ -28,13 +29,15 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.UNKNOWN
 
 public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.smarthome.core.thing.Channel> {
     private final ThingUID thingUID;
+    private final int number;
 
-    public ChannelCallback(final ThingUID thingUID) {
+    public ChannelCallback(final ThingUID thingUID, final int number) {
         this.thingUID = requireNonNull(thingUID);
+        this.number = number;
     }
 
-    private ChannelUID createChannelUid(String id) {
-        return new ChannelUID(thingUID, id);
+    private ChannelUID createChannelUid() {
+        return new ChannelUID(thingUID, valueOf(number));
     }
 
     private ChannelTypeUID createChannelTypeUID(String id) {
@@ -43,7 +46,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
 
     @Override
     public Channel onDecimalValue(final DecimalValue decimalValue) {
-        final ChannelUID channelUid = createChannelUid(DECIMAL_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(DECIMAL_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, null) // TODO should it be null?
@@ -62,7 +65,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
     }
 
     private Channel switchChannel() {
-        final ChannelUID channelUid = createChannelUid(SWITCH_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(SWITCH_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, "Switch")
@@ -77,7 +80,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
 
     @Override
     public Channel onRgbValue(final RgbValue rgbValue) {
-        final ChannelUID channelUid = createChannelUid(RGB_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(RGB_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, null) // TODO should it be null?
@@ -87,7 +90,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
 
     @Override
     public Channel onStoppableOpenClose(final StoppableOpenClose stoppableOpenClose) {
-        final ChannelUID channelUid = createChannelUid(ROLLER_SHUTTER_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(ROLLER_SHUTTER_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, null) // TODO should it be null?
@@ -97,7 +100,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
 
     @Override
     public Channel onTemperatureValue(final TemperatureValue temperatureValue) {
-        final ChannelUID channelUid = createChannelUid(TEMPERATURE_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(TEMPERATURE_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, null) // TODO should it be null?
@@ -107,7 +110,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
 
     @Override
     public Channel onTemperatureAndHumidityValue(final TemperatureAndHumidityValue temperatureAndHumidityValue) {
-        final ChannelUID channelUid = createChannelUid(TEMPERATURE_AND_HUMIDITY_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(TEMPERATURE_AND_HUMIDITY_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, null) // TODO should it be null?
@@ -117,7 +120,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
 
     @Override
     public Channel onUnknownValue(final UnknownValue unknownValue) {
-        final ChannelUID channelUid = createChannelUid(UNKNOWN_CHANNEL_ID);
+        final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(UNKNOWN_CHANNEL_ID);
 
         return ChannelBuilder.create(channelUid, null) // TODO should it be null?

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.PingServer;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.SetActivityTimeout;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.DeviceChannelValue;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDevice;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDeviceC;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.sd.RegisterDeviceResult;
@@ -45,6 +46,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
     private String guid;
     private AtomicReference<ScheduledFuture<?>> pingSchedule = new AtomicReference<>();
     private AtomicLong lastMessageFromDevice = new AtomicLong();
+    private SuplaDeviceHandler suplaDeviceHandler;
 
     public JSuplaChannel(final int serverAccessId,
                          final char[] serverAccessIdPassword,
@@ -85,6 +87,8 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
             setActivityTimeout((SetActivityTimeout) entity);
         } else if (entity instanceof PingServer) {
             pingServer((PingServer) entity);
+        } else if (entity instanceof DeviceChannelValue) {
+            deviceChannelValue((DeviceChannelValue) entity);
         } else {
             logger.debug("Do not handling this command: {}", entity);
         }
@@ -175,7 +179,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
     private void bindToThingHandler(final RegisterDevice registerDevice) {
         final Optional<SuplaDeviceHandler> suplaDevice = suplaDeviceRegistry.getSuplaDevice(guid);
         if (suplaDevice.isPresent()) {
-            final SuplaDeviceHandler suplaDeviceHandler = suplaDevice.get();
+            suplaDeviceHandler = suplaDevice.get();
             suplaDeviceHandler.setChannels(registerDevice.getChannels());
             suplaDeviceHandler.setSuplaChannel(channel);
         } else {
@@ -185,6 +189,11 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
                     DEVICE_TIMEOUT_SEC,
                     SECONDS);
         }
+    }
+
+    private void deviceChannelValue(final DeviceChannelValue entity) {
+        final DeviceChannelValue channelValue = entity;
+        suplaDeviceHandler.updateStatus(entity.getChannelNumber(), entity.getValue());
     }
     
     @Override
