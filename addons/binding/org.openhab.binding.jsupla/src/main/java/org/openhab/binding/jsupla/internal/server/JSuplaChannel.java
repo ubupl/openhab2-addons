@@ -85,7 +85,7 @@ public final class JSuplaChannel {
                         entity);
             }
         } else if (entity instanceof SetActivityTimeout) {
-            setActivityTimeout((SetActivityTimeout) entity);
+            setActivityTimeout();
         } else if (entity instanceof PingServer) {
             pingServer((PingServer) entity);
         } else if (entity instanceof DeviceChannelValue) {
@@ -110,7 +110,7 @@ public final class JSuplaChannel {
         }
     }
 
-    private void setActivityTimeout(final SetActivityTimeout entity) {
+    private void setActivityTimeout() {
         final SetActivityTimeoutResult data = new SetActivityTimeoutResult(
                 DEVICE_TIMEOUT_SEC,
                 DEVICE_TIMEOUT_SEC - 2,
@@ -210,7 +210,6 @@ public final class JSuplaChannel {
     }
 
     private void deviceChannelValue(final DeviceChannelValue entity) {
-        final DeviceChannelValue channelValue = entity;
         suplaDeviceHandler.updateStatus(entity.getChannelNumber(), entity.getValue());
     }
 
