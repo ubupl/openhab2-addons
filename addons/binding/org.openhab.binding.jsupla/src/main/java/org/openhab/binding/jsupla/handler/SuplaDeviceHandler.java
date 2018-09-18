@@ -23,6 +23,7 @@ import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
@@ -221,5 +222,11 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         ThingBuilder thingBuilder = editThing();
         thingBuilder.withChannels(channels);
         updateThing(thingBuilder.build());
+    }
+
+    @Override
+    public void updateStatus(final ThingStatus status, final ThingStatusDetail statusDetail,
+                             @Nullable final String description) {
+        super.updateStatus(status, statusDetail, description);
     }
 }

@@ -133,21 +133,17 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
 
     private void newChannel(final Channel channel, int serverAccessId, char[] serverAccessIdPassword) {
         logger.debug("New channel {}", channel);
+        final JSuplaChannel jSuplaChannel = new JSuplaChannel(serverAccessId,
+                serverAccessIdPassword,
+                jSuplaDiscoveryService,
+                channel,
+                scheduledPool,
+                suplaDeviceRegistry);
+        
         channel.getMessagePipe().subscribe(
-                new JSuplaChannel(serverAccessId,
-                        serverAccessIdPassword,
-                        jSuplaDiscoveryService,
-                        channel,
-                        scheduledPool,
-                        suplaDeviceRegistry),
-                ex -> errorOccurredInChannel(channel, ex));
-    }
-
-    // TODO remove this to JSuplaChannel
-    private void errorOccurredInChannel(Channel channel, Throwable ex) {
-        logger.error("Error occurred in channel {}. ", channel, ex);
-        updateStatus(OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                "Error occurred in channel pipe. " + ex.getLocalizedMessage());
+                jSuplaChannel::onNext,
+                jSuplaChannel::onError,
+                jSuplaChannel::onComplete);
     }
 
     @Override

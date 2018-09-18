@@ -1,5 +1,6 @@
 package org.openhab.binding.jsupla.internal.server;
 
+import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
 import org.openhab.binding.jsupla.internal.SuplaDeviceRegistry;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
@@ -23,18 +24,18 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.time.Instant.now;
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEVICE_TIMEOUT_SEC;
 import static pl.grzeslowski.jsupla.protocol.api.ResultCode.SUPLA_RESULTCODE_TRUE;
 import static reactor.core.publisher.Flux.just;
 
-public final class JSuplaChannel implements Consumer<ToServerEntity> {
+public final class JSuplaChannel {
     private final SuplaDeviceRegistry suplaDeviceRegistry;
     private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
     private final int serverAccessId;
@@ -62,8 +63,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
         this.suplaDeviceRegistry = requireNonNull(suplaDeviceRegistry);
     }
 
-    @Override
-    public synchronized void accept(final ToServerEntity entity) {
+    public synchronized void onNext(final ToServerEntity entity) {
         logger.trace("{} -> {}", guid, entity);
         lastMessageFromDevice.set(now().getEpochSecond());
         if (!authorized) {
@@ -91,6 +91,21 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
             deviceChannelValue((DeviceChannelValue) entity);
         } else {
             logger.debug("Do not handling this command: {}", entity);
+        }
+    }
+
+    public void onError(final Throwable ex) {
+        if (suplaDeviceHandler != null) {
+            logger.error("Error occurred in device. ", ex);
+            suplaDeviceHandler.updateStatus(OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                    "Error occurred in channel pipe. " + ex.getLocalizedMessage());
+        }
+    }
+
+    public void onComplete() {
+        if (suplaDeviceHandler != null) {
+            suplaDeviceHandler.updateStatus(OFFLINE, ThingStatusDetail.NONE,
+                    "Device went offline");
         }
     }
 
@@ -195,7 +210,7 @@ public final class JSuplaChannel implements Consumer<ToServerEntity> {
         final DeviceChannelValue channelValue = entity;
         suplaDeviceHandler.updateStatus(entity.getChannelNumber(), entity.getValue());
     }
-    
+
     @Override
     public String toString() {
         return "JSuplaChannel{" +
