@@ -1,52 +1,87 @@
-# <bindingName> Binding
+# jSupla Binding
 
-_Give some details about what this binding is meant for - a protocol, system, specific device._
-
-_If possible, provide some resources like pictures, a YouTube video, etc. to give an impression of what can be done with this binding. You can place such resources into a `doc` folder next to this README.md._
+This binding support Supla devices. To use it you don't need 
 
 ## Supported Things
 
-_Please describe the different supported things / devices within this section._
-_Which different types are supported, which models were tested etc.?_
-_Note that it is planned to generate some part of this based on the XML files within ```ESH-INF/thing``` of your binding._
+Supported things:
+
+* Switches
+* RGB controllers
+* Temperature & humidity devices
+
+This binding was tested with ZAMEL 
+[ROW-01](http://www.zamel.pl/produkty/supla-sterowanie-wifi/supla--odbiorniki-dopuszkowe/row01) and 
+[ROW-02](http://www.zamel.pl/produkty/supla-sterowanie-wifi/supla--odbiorniki-dopuszkowe/row02) devices. Big thanks 
+to **Zamel** for providing free testing devices.
 
 ## Discovery
 
-_Describe the available auto-discovery features here. Mention for what it works and what needs to be kept in mind when using it._
-
-## Binding Configuration
-
-_If your binding requires or supports general configuration settings, please create a folder ```cfg``` and place the configuration file ```<bindingId>.cfg``` inside it. In this section, you should link to this file and provide some information about the options. The file could e.g. look like:_
-
-```
-# Configuration for the Philips Hue Binding
-#
-# Default secret key for the pairing of the Philips Hue Bridge.
-# It has to be between 10-40 (alphanumeric) characters 
-# This may be changed by the user for security reasons.
-secret=EclipseSmartHome
-```
-
-_Note that it is planned to generate some part of this based on the information that is available within ```ESH-INF/binding``` of your binding._
-
-_If your binding does not offer any generic configurations, you can remove this section completely._
-
-## Thing Configuration
-
-_Describe what is needed to manually configure a thing, either through the (Paper) UI or via a thing-file. This should be mainly about its mandatory and optional configuration parameters. A short example entry for a thing file can help!_
-
-_Note that it is planned to generate some part of this based on the XML files within ```ESH-INF/thing``` of your binding._
-
-## Channels
-
-_Here you should provide information about available channel types, what their meaning is and how they can be used._
-
-_Note that it is planned to generate some part of this based on the XML files within ```ESH-INF/thing``` of your binding._
+Using auto discovery is recommended way of adding devices and server. After creating jSupla server from inbox all 
+devices will be added into the openHAB inbox page.
 
 ## Full Example
 
-_Provide a full usage example based on textual configuration files (*.things, *.items, *.sitemap)._
+### Add jSupla Server
 
-## Any custom content here!
+After adding jSupla binding go to inbox and add _jSupla Server_. By default it will work on port ```2016```.
 
-_Feel free to add additional sections for whatever you think should also be mentioned about your binding!_
+![Discover jSupla server](doc/discover-server.PNG "Discover jSupla server")
+
+![Add jSupla server](doc/add-server.PNG "Add jSupla server")
+ 
+On configuration page you need to choose ```Server Access ID``` and ```Server Access ID Password```. Write this things down 
+because you will need them later to configure your devices.
+ 
+![Configure jSupla server](doc/configure-server.PNG "Configure jSupla server")
+ 
+### Configure Supla devices
+
+To configure device follow instructions provided by manufacturer. 
+
+```Location ID``` and ```Location Password``` should be filled up with values from ```Server Access ID``` and 
+```Server Access ID Password```.
+
+![Configure Supla device](doc/configure-supla-device.PNG "Configure Supla device")
+
+After restarting device wait up to 30 sec. and check OpenHAB inbox. You should find there a thing that has the same 
+_GUID_ as device you configured. 
+
+![Discovery device](doc/discovery-device.PNG "Discovery device")
+
+![Add device](doc/add-device.PNG "Add device")
+
+Last thing to do is open previously added thing and link channels by clicking o them. 
+
+![Link channel](doc/link-channel.PNG "Link channel")
+
+## Bugs, problems, ect.
+
+If you find any bugs you can submit them [on Github issue page](https://github.com/magx2/openhab2-addons/issues). Before
+doing this it would be great if you would provide details logs. To do this add this lines in ```logback.xml```:
+
+```xml
+<appender name="supla" class="ch.qos.logback.core.FileAppender">
+   <param name="Append" value="false"></param>
+    <file>~/jsupla.log</file>
+    <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%-80.80logger{80}:%-5line] - %msg%ex{10}%n</pattern>
+    </encoder>
+</appender>
+<logger name="org.openhab.binding.jsupla" level="TRACE" additivity="true">
+    <appender-ref ref="supla" />
+</logger>
+<logger name="pl.grzeslowski" level="TRACE" additivity="true">
+    <appender-ref ref="supla" />
+</logger>
+```
+
+The log file should be in ```~/jsupla.log``` directory.
+
+## Links
+
+* [supla.org](http://www.supla.org) - link to official page
+* [forum.supla.org](https://forum.supla.org/) - official forum page
+* [e-sklep.zamel.pl](https://e-sklep.zamel.pl/kategoria-produktu/supla/) - shop where you can buy certified Supla devices
+* [origin repo with this binding](https://github.com/magx2/openhab2-addons)
+* Person responsible for creating this binding [Martin Grześlowski](https://github.com/magx2)
