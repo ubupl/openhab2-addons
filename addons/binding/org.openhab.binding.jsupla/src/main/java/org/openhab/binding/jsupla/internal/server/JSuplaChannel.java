@@ -2,6 +2,7 @@ package org.openhab.binding.jsupla.internal.server;
 
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.openhab.binding.jsupla.handler.JSuplaCloudBridgeHandler;
 import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
 import org.openhab.binding.jsupla.internal.SuplaDeviceRegistry;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
@@ -39,6 +40,7 @@ import static reactor.core.publisher.Flux.just;
 public final class JSuplaChannel {
     private final SuplaDeviceRegistry suplaDeviceRegistry;
     private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
+    private final JSuplaCloudBridgeHandler jSuplaCloudBridgeHandler;
     private final int serverAccessId;
     private final char[] serverAccessIdPassword;
     private final JSuplaDiscoveryService jSuplaDiscoveryService;
@@ -50,12 +52,14 @@ public final class JSuplaChannel {
     private AtomicLong lastMessageFromDevice = new AtomicLong();
     private SuplaDeviceHandler suplaDeviceHandler;
 
-    public JSuplaChannel(final int serverAccessId,
+    public JSuplaChannel(final JSuplaCloudBridgeHandler jSuplaCloudBridgeHandler,
+                         final int serverAccessId,
                          final char[] serverAccessIdPassword,
                          final JSuplaDiscoveryService jSuplaDiscoveryService,
                          final Channel channel,
                          final ScheduledExecutorService scheduledPool,
                          final SuplaDeviceRegistry suplaDeviceRegistry) {
+        this.jSuplaCloudBridgeHandler = requireNonNull(jSuplaCloudBridgeHandler);
         this.serverAccessId = serverAccessId;
         this.serverAccessIdPassword = serverAccessIdPassword;
         this.jSuplaDiscoveryService = requireNonNull(jSuplaDiscoveryService);
@@ -104,6 +108,8 @@ public final class JSuplaChannel {
     }
 
     public void onComplete() {
+        logger.debug("onComplete() {}", toString());
+        this.jSuplaCloudBridgeHandler.completedChannel();
         if (suplaDeviceHandler != null) {
             suplaDeviceHandler.updateStatus(OFFLINE, ThingStatusDetail.NONE,
                     "Device went offline");

@@ -75,8 +75,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
             server = factory.createNewServer(buildServerProperties(port));
             server.getNewChannelsPipe().subscribe(
                     this::channelConsumer,
-                    this::errorOccurredInChannel,
-                    this::completedChannel);
+                    this::errorOccurredInChannel);
 
             logger.debug("jSuplaServer running on port {}", port);
             updateStatus(ONLINE);
@@ -99,7 +98,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
                 "Error occurred in server pipe. Message: " + ex.getLocalizedMessage());
     }
 
-    private void completedChannel() {
+    public void completedChannel() {
         logger.debug("Device disconnected from {}", toString());
         changeNumberOfConnectedDevices(-1);
     }
@@ -133,7 +132,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
 
     private void newChannel(final Channel channel, int serverAccessId, char[] serverAccessIdPassword) {
         logger.debug("New channel {}", channel);
-        final JSuplaChannel jSuplaChannel = new JSuplaChannel(serverAccessId,
+        final JSuplaChannel jSuplaChannel = new JSuplaChannel(
+                this,
+                serverAccessId,
                 serverAccessIdPassword,
                 jSuplaDiscoveryService,
                 channel,
