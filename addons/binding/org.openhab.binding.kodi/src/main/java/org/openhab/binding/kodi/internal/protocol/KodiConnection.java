@@ -26,6 +26,7 @@ import org.eclipse.smarthome.io.net.http.HttpUtil;
 import org.openhab.binding.kodi.internal.KodiEventListener;
 import org.openhab.binding.kodi.internal.KodiEventListener.KodiPlaylistState;
 import org.openhab.binding.kodi.internal.KodiEventListener.KodiState;
+import org.openhab.binding.kodi.internal.model.KodiDuration;
 import org.openhab.binding.kodi.internal.model.KodiFavorite;
 import org.openhab.binding.kodi.internal.model.KodiPVRChannel;
 import org.openhab.binding.kodi.internal.model.KodiPVRChannelGroup;
@@ -64,7 +65,7 @@ public class KodiConnection implements KodiClientSocketEventListener {
     private KodiClientSocket socket;
 
     private int volume = 0;
-    private KodiState currentState = KodiState.Stop;
+    private KodiState currentState = KodiState.STOP;
     private KodiPlaylistState currentPlaylistState = KodiPlaylistState.CLEAR;
 
     private final KodiEventListener listener;
@@ -398,7 +399,7 @@ public class KodiConnection implements KodiClientSocketEventListener {
     }
 
     private int getSpeed(int activePlayer) {
-        final String[] properties = { "speed", "position" };
+        final String[] properties = { "speed" };
 
         JsonObject params = new JsonObject();
         params.addProperty("playerid", activePlayer);
@@ -420,24 +421,29 @@ public class KodiConnection implements KodiClientSocketEventListener {
             if (activePlayer >= 0) {
                 int speed = getSpeed(activePlayer);
                 if (speed == 0) {
-                    updateState(KodiState.Stop);
+                    updateState(KodiState.STOP);
                 } else if (speed == 1) {
-                    updateState(KodiState.Play);
+                    updateState(KodiState.PLAY);
                 } else if (speed < 0) {
-                    updateState(KodiState.Rewind);
+                    updateState(KodiState.REWIND);
                 } else {
-                    updateState(KodiState.FastForward);
+                    updateState(KodiState.FASTFORWARD);
                 }
                 requestPlayerUpdate(activePlayer);
             } else {
-                updateState(KodiState.Stop);
+                updateState(KodiState.STOP);
             }
         }
     }
 
     private void requestPlayerUpdate(int activePlayer) {
+        requestPlayerItemUpdate(activePlayer);
+        requestPlayerPropertiesUpdate(activePlayer);
+    }
+
+    private void requestPlayerItemUpdate(int activePlayer) {
         final String[] properties = { "title", "album", "artist", "director", "thumbnail", "file", "fanart",
-                "showtitle", "streamdetails", "channel", "channeltype" };
+                "showtitle", "streamdetails", "channel", "channeltype", "genre" };
 
         JsonObject params = new JsonObject();
         params.addProperty("playerid", activePlayer);
@@ -475,12 +481,20 @@ public class KodiConnection implements KodiClientSocketEventListener {
                     }
                 }
 
-                String artist = "";
-                if ("movie".equals(mediaType)) {
-                    artist = convertFromArray(item.get("director").getAsJsonArray());
+                List<String> artistList = null;
+                if ("movie".equals(mediaType) && item.has("director")) {
+                    artistList = convertFromArrayToList(item.get("director").getAsJsonArray());
                 } else {
                     if (item.has("artist")) {
-                        artist = convertFromArray(item.get("artist").getAsJsonArray());
+                        artistList = convertFromArrayToList(item.get("artist").getAsJsonArray());
+                    }
+                }
+
+                List<String> genreList = null;
+                if (item.has("genre")) {
+                    JsonElement genre = item.get("genre");
+                    if (genre instanceof JsonArray) {
+                        genreList = convertFromArrayToList(genre.getAsJsonArray());
                     }
                 }
 
@@ -499,19 +513,60 @@ public class KodiConnection implements KodiClientSocketEventListener {
                     fanart = downloadImage(convertToImageUrl(item.get("fanart")));
                 }
 
-                try {
-                    listener.updateAlbum(album);
-                    listener.updateTitle(title);
-                    listener.updateShowTitle(showTitle);
-                    listener.updateArtist(artist);
-                    listener.updateMediaType(mediaType);
-                    listener.updatePVRChannel(channel);
-                    listener.updateThumbnail(thumbnail);
-                    listener.updateFanart(fanart);
-                } catch (Exception e) {
-                    logger.error("Event listener invoking error", e);
-                }
+                listener.updateAlbum(album);
+                listener.updateTitle(title);
+                listener.updateShowTitle(showTitle);
+                listener.updateArtistList(artistList);
+                listener.updateMediaType(mediaType);
+                listener.updateGenreList(genreList);
+                listener.updatePVRChannel(channel);
+                listener.updateThumbnail(thumbnail);
+                listener.updateFanart(fanart);
             }
+        }
+    }
+
+    private void requestPlayerPropertiesUpdate(int activePlayer) {
+        final String[] properties = { "percentage", "time", "totaltime" };
+
+        JsonObject params = new JsonObject();
+        params.addProperty("playerid", activePlayer);
+        params.add("properties", getJsonArray(properties));
+        JsonElement response = socket.callMethod("Player.GetProperties", params);
+
+        if (response instanceof JsonObject) {
+            JsonObject result = response.getAsJsonObject();
+
+            double percentage = -1;
+            if (result.has("percentage")) {
+                percentage = result.get("percentage").getAsDouble();
+            }
+
+            long currentTime = -1;
+            if (result.has("time")) {
+                JsonObject timeObject = result.get("time").getAsJsonObject();
+                KodiDuration time = new KodiDuration();
+                time.setHours(timeObject.get("hours").getAsLong());
+                time.setMinutes(timeObject.get("minutes").getAsLong());
+                time.setSeconds(timeObject.get("seconds").getAsLong());
+                time.setMilliseconds(timeObject.get("milliseconds").getAsLong());
+                currentTime = time.toSeconds();
+            }
+
+            long duration = -1;
+            if (result.has("totaltime")) {
+                JsonObject totalTimeObject = result.get("totaltime").getAsJsonObject();
+                KodiDuration totalTime = new KodiDuration();
+                totalTime.setHours(totalTimeObject.get("hours").getAsLong());
+                totalTime.setMinutes(totalTimeObject.get("minutes").getAsLong());
+                totalTime.setSeconds(totalTimeObject.get("seconds").getAsLong());
+                totalTime.setMilliseconds(totalTimeObject.get("milliseconds").getAsLong());
+                duration = totalTime.toSeconds();
+            }
+
+            listener.updateCurrentTimePercentage(percentage);
+            listener.updateCurrentTime(currentTime);
+            listener.updateDuration(duration);
         }
     }
 
@@ -523,15 +578,12 @@ public class KodiConnection implements KodiClientSocketEventListener {
         return result;
     }
 
-    private String convertFromArray(JsonArray data) {
-        StringBuilder result = new StringBuilder();
+    private List<String> convertFromArrayToList(JsonArray data) {
+        List<String> list = new ArrayList<>();
         for (JsonElement element : data) {
-            if (result.length() > 0) {
-                result.append(", ");
-            }
-            result.append(element.getAsString());
+            list.add(element.getAsString());
         }
-        return result.toString();
+        return list;
     }
 
     private String convertToImageUrl(JsonElement element) {
@@ -577,26 +629,25 @@ public class KodiConnection implements KodiClientSocketEventListener {
 
     private void updateState(KodiState state) {
         // sometimes get a Pause immediately after a Stop - so just ignore
-        if (currentState.equals(KodiState.Stop) && state.equals(KodiState.Pause)) {
+        if (currentState.equals(KodiState.STOP) && state.equals(KodiState.PAUSE)) {
             return;
         }
-        try {
-            listener.updatePlayerState(state);
-            // if this is a Stop then clear everything else
-            if (state == KodiState.Stop) {
-                listener.updateAlbum("");
-                listener.updateTitle("");
-                listener.updateShowTitle("");
-                listener.updateArtist("");
-                listener.updateMediaType("");
-                listener.updatePVRChannel("");
-                listener.updateThumbnail(null);
-                listener.updateFanart(null);
-            }
-        } catch (Exception e) {
-            logger.error("Event listener invoking error", e);
+        listener.updatePlayerState(state);
+        // if this is a Stop then clear everything else
+        if (state == KodiState.STOP) {
+            listener.updateAlbum("");
+            listener.updateTitle("");
+            listener.updateShowTitle("");
+            listener.updateArtistList(null);
+            listener.updateMediaType("");
+            listener.updateGenreList(null);
+            listener.updatePVRChannel("");
+            listener.updateThumbnail(null);
+            listener.updateFanart(null);
+            listener.updateCurrentTimePercentage(-1);
+            listener.updateCurrentTime(-1);
+            listener.updateDuration(-1);
         }
-
         // keep track of our current state
         currentState = state;
     }
@@ -632,21 +683,21 @@ public class KodiConnection implements KodiClientSocketEventListener {
             JsonObject player = data.get("player").getAsJsonObject();
             Integer playerId = player.get("playerid").getAsInt();
 
-            updateState(KodiState.Play);
+            updateState(KodiState.PLAY);
 
             requestPlayerUpdate(playerId);
         } else if ("Player.OnPause".equals(method)) {
-            updateState(KodiState.Pause);
+            updateState(KodiState.PAUSE);
         } else if ("Player.OnResume".equals(method)) {
-            updateState(KodiState.Play);
+            updateState(KodiState.PLAY);
         } else if ("Player.OnStop".equals(method)) {
             // get the end parameter and send an End state if true
             JsonObject data = json.get("data").getAsJsonObject();
             Boolean end = data.get("end").getAsBoolean();
             if (end) {
-                updateState(KodiState.End);
+                updateState(KodiState.END);
             }
-            updateState(KodiState.Stop);
+            updateState(KodiState.STOP);
         } else if ("Player.OnPropertyChanged".equals(method)) {
             logger.debug("Player.OnPropertyChanged");
         } else if ("Player.OnSpeedChanged".equals(method)) {
@@ -654,13 +705,13 @@ public class KodiConnection implements KodiClientSocketEventListener {
             JsonObject player = data.get("player").getAsJsonObject();
             int speed = player.get("speed").getAsInt();
             if (speed == 0) {
-                updateState(KodiState.Pause);
+                updateState(KodiState.PAUSE);
             } else if (speed == 1) {
-                updateState(KodiState.Play);
+                updateState(KodiState.PLAY);
             } else if (speed < 0) {
-                updateState(KodiState.Rewind);
+                updateState(KodiState.REWIND);
             } else if (speed > 1) {
-                updateState(KodiState.FastForward);
+                updateState(KodiState.FASTFORWARD);
             }
         } else {
             logger.debug("Unknown event from Kodi {}: {}", method, json);

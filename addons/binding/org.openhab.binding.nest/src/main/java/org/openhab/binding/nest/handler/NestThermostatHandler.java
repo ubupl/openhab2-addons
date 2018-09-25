@@ -49,7 +49,7 @@ public class NestThermostatHandler extends NestBaseHandler<Thermostat> {
     private final Logger logger = LoggerFactory.getLogger(NestThermostatHandler.class);
 
     public NestThermostatHandler(Thing thing) {
-        super(thing);
+        super(thing, Thermostat.class);
     }
 
     @Override
@@ -170,17 +170,20 @@ public class NestThermostatHandler extends NestBaseHandler<Thermostat> {
 
     private void addTemperatureUpdateRequest(String celsiusField, String fahrenheitField,
             QuantityType<Temperature> quantity) {
-        Unit<Temperature> unit = getTemperatureUnit();
+        Unit<Temperature> unit = getTemperatureUnit(quantity.getUnit());
         BigDecimal value = quantityToRoundedTemperature(quantity, unit);
         if (value != null) {
             addUpdateRequest(NEST_THERMOSTAT_UPDATE_PATH, unit == CELSIUS ? celsiusField : fahrenheitField, value);
         }
     }
 
-    private Unit<Temperature> getTemperatureUnit() {
+    private Unit<Temperature> getTemperatureUnit(Unit<Temperature> fallbackUnit) {
         Thermostat lastUpdate = getLastUpdate();
-        return lastUpdate != null && lastUpdate.getTemperatureUnit() != null ? lastUpdate.getTemperatureUnit()
-                : CELSIUS;
+        if (lastUpdate != null && lastUpdate.getTemperatureUnit() != null) {
+            return lastUpdate.getTemperatureUnit();
+        }
+
+        return fallbackUnit;
     }
 
     private @Nullable BigDecimal quantityToRoundedTemperature(QuantityType<Temperature> quantity,
@@ -197,19 +200,17 @@ public class NestThermostatHandler extends NestBaseHandler<Thermostat> {
     }
 
     @Override
-    public void onNewNestThermostatData(Thermostat thermostat) {
-        if (isNotHandling(thermostat)) {
-            logger.debug("Thermostat {} is not handling update for {}", getDeviceId(), thermostat.getDeviceId());
-            return;
-        }
+    protected void update(Thermostat oldThermostat, Thermostat thermostat) {
+        logger.debug("Updating {}", getThing().getUID());
 
-        logger.debug("Updating thermostat {}", thermostat.getDeviceId());
-
-        setLastUpdate(thermostat);
-        updateChannels(thermostat);
-        updateStatus(thermostat.isOnline() == null ? ThingStatus.UNKNOWN
-                : thermostat.isOnline() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
+        updateLinkedChannels(oldThermostat, thermostat);
         updateProperty(PROPERTY_FIRMWARE_VERSION, thermostat.getSoftwareVersion());
+
+        ThingStatus newStatus = thermostat.isOnline() == null ? ThingStatus.UNKNOWN
+                : thermostat.isOnline() ? ThingStatus.ONLINE : ThingStatus.OFFLINE;
+        if (newStatus != thing.getStatus()) {
+            updateStatus(newStatus);
+        }
     }
 
 }
