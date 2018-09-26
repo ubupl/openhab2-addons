@@ -52,9 +52,15 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
     protected @Nullable ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
+        // it's done cause tycho-compile raises possible null error
+        final @Nullable SuplaDeviceRegistry suplaDeviceRegistryNonNull = suplaDeviceRegistry;
         if (SUPLA_DEVICE_TYPE.equals(thingTypeUID)) {
             final SuplaDeviceHandler suplaDeviceHandler = new SuplaDeviceHandler(thing);
-            suplaDeviceRegistry.addSuplaDevice(suplaDeviceHandler);
+            if (suplaDeviceRegistryNonNull != null) {
+                suplaDeviceRegistryNonNull.addSuplaDevice(suplaDeviceHandler);
+            } else {
+                throw new NullPointerException("suplaDeviceRegistry");
+            }
             return suplaDeviceHandler;
         } else if (JSUPLA_SERVER_TYPE.equals(thingTypeUID)) {
             JSuplaCloudBridgeHandler bridgeHandler = new JSuplaCloudBridgeHandler((Bridge) thing, suplaDeviceRegistry);
@@ -69,6 +75,10 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
     @Reference
     public void setSuplaDeviceRegistry(final SuplaDeviceRegistry suplaDeviceRegistry) {
         this.suplaDeviceRegistry = suplaDeviceRegistry;
+    }
+
+    public void unsetSuplaDeviceRegistry(final SuplaDeviceRegistry suplaDeviceRegistry) {
+        this.suplaDeviceRegistry = null;
     }
 
     private synchronized JSuplaDiscoveryService registerThingDiscovery(JSuplaCloudBridgeHandler bridgeHandler) {
