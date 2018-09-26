@@ -62,7 +62,7 @@ import static reactor.core.publisher.Flux.just;
 public class SuplaDeviceHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(SuplaDeviceHandler.class);
 
-    private pl.grzeslowski.jsupla.server.api.Channel suplaChannel;
+    private pl.grzeslowski.jsupla.server.api.@Nullable Channel suplaChannel;
     private final Object channelLock = new Object();
 
     private final Map<ChannelUID, Integer> channelUIDS = new HashMap<>();
@@ -71,6 +71,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         super(thing);
     }
 
+    @SuppressWarnings({"unused", "null"})
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         final Integer channelNumber = channelUIDS.get(channelUID);
@@ -98,7 +99,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
                 );
     }
 
-    private ChannelValue buildChannelValue(final Command command) {
+    private @Nullable ChannelValue buildChannelValue(final Command command) {
         if (command instanceof OnOffType) {
             final OnOffType onOff = (OnOffType) command;
             if (onOff == OnOffType.ON) {
@@ -133,6 +134,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         return null;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void initialize() {
         if (getBridge() == null) {
@@ -175,6 +177,7 @@ public class SuplaDeviceHandler extends BaseThingHandler {
                 .forEach(pair -> updateState(pair.getValue0(), pair.getValue1()));
     }
 
+    @SuppressWarnings("deprecation")
     private Pair<ChannelUID, State> channelForUpdate(final DeviceChannel deviceChannel) {
         return Pair.with(
                 createChannelUid(deviceChannel.getNumber()),
@@ -205,10 +208,6 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         channelUIDS.put(channel.getUID(), deviceChannel.getNumber());
         return channel;
     }
-
-//    public void setChannels(final DeviceChannelsB channels) {
-//
-//    }
 
     private void updateChannels(final List<Channel> channels) {
         ThingBuilder thingBuilder = editThing();

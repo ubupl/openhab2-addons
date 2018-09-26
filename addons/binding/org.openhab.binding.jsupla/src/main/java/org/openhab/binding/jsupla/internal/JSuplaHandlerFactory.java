@@ -41,7 +41,7 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPPORTED_THING_
 @NonNullByDefault
 public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(JSuplaHandlerFactory.class);
-    private SuplaDeviceRegistry suplaDeviceRegistry;
+    private @Nullable SuplaDeviceRegistry suplaDeviceRegistry;
     
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
