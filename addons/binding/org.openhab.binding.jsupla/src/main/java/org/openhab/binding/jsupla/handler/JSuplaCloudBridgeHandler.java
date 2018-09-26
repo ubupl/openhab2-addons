@@ -52,6 +52,9 @@ import static pl.grzeslowski.jsupla.server.api.ServerProperties.fromList;
 import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.PORT;
 import static pl.grzeslowski.jsupla.server.netty.api.NettyServerFactory.SSL_CTX;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private static final Logger logger = LoggerFactory.getLogger(JSuplaCloudBridgeHandler.class);
     private final SuplaDeviceRegistry suplaDeviceRegistry;

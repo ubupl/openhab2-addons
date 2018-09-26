@@ -26,6 +26,9 @@ import pl.grzeslowski.jsupla.protocoljava.api.channels.values.TemperatureAndHumi
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.TemperatureValue;
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.UnknownValue;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 public class ChannelValueToState implements ChannelValueSwitch.Callback<State> {
     @Override
     public State onDecimalValue(final DecimalValue decimalValue) {

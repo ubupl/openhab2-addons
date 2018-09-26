@@ -27,6 +27,9 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_PORT;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEFAULT_PORT;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.JSUPLA_SERVER_TYPE;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 @Component(service = DiscoveryService.class, immediate = true, configurationPid = "binding.jsupla")
 public class BridgeDiscovery extends AbstractDiscoveryService {
     private final Logger logger = LoggerFactory.getLogger(BridgeDiscovery.class);

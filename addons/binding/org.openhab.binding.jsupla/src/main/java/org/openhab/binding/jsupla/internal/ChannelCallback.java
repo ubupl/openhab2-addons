@@ -35,6 +35,9 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.TEMPERA
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.TEMPERATURE_CHANNEL_ID;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.UNKNOWN_CHANNEL_ID;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.smarthome.core.thing.Channel> {
     private final ThingUID thingUID;
     private final int number;

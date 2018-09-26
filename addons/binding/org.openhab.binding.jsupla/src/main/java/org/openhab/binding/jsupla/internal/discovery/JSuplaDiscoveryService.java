@@ -24,6 +24,9 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_GUI
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_TYPE;
 import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 public class JSuplaDiscoveryService extends AbstractDiscoveryService {
     private final Logger logger = LoggerFactory.getLogger(JSuplaDiscoveryService.class);
     private final JSuplaCloudBridgeHandler jSuplaCloudBridgeHandler;

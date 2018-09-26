@@ -45,6 +45,9 @@ import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEVICE_TIMEOUT_S
 import static pl.grzeslowski.jsupla.protocol.api.ResultCode.SUPLA_RESULTCODE_TRUE;
 import static reactor.core.publisher.Flux.just;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 public final class JSuplaChannel {
     private final SuplaDeviceRegistry suplaDeviceRegistry;
     private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);

@@ -18,6 +18,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 @Component(service = SuplaDeviceRegistry.class, immediate = true, configurationPid = "binding.jsupla")
 public class SuplaDeviceRegistryImpl implements SuplaDeviceRegistry {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();

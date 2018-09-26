@@ -12,6 +12,9 @@ import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
 
 import java.util.Optional;
 
+/**
+ * @author Grzeslowski - Initial contribution
+ */
 public interface SuplaDeviceRegistry {
     void addSuplaDevice(SuplaDeviceHandler suplaDeviceHandler);
 
