@@ -134,7 +134,7 @@ public final class JSuplaChannel {
                 DEVICE_TIMEOUT_SEC + 2);
         channel.write(Flux.just(data))
                 .subscribe(date -> logger.trace("setActivityTimeout {} {}", data, date.format(ISO_DATE_TIME)));
-        final ScheduledFuture<?> pingSchedule = scheduledPool.scheduleAtFixedRate(
+        final ScheduledFuture<?> pingSchedule = scheduledPool.scheduleWithFixedDelay(
                 this::checkIfDeviceIsUp,
                 DEVICE_TIMEOUT_SEC * 2,
                 DEVICE_TIMEOUT_SEC,
