@@ -21,8 +21,7 @@
 					This is ID that devices will use to register to your server.
 				</description>
 			</parameter>
-			<parameter name="serverAccessIdPassword" type="text" required="true">
-				<context>password</context>
+			<parameter name="serverAccessIdPassword" type="integer" required="true">
 				<label>Server Access ID Password</label>
 				<description>
 					This is password required to register to your server.
@@ -30,10 +29,15 @@
 			</parameter>
 			<parameter name="port" type="integer" required="true" min="1">
 				<label>Server port</label>
-				<description>Port on which server should listen. Common ports are:
-					2016 - port with SSL, used by majority of devices,
-					2015 - port without SSL, often used by home made Arduino/RPi devices.
-					Note: Double check that chosen port is free to use.
+				<description>
+					<![CDATA[
+					Port on which server should listen. Common ports are:
+					<ol>
+					<li>2016 - port with SSL, used by majority of devices,</li>
+					<li>2015 - port without SSL, often used by home made Arduino/RPi devices.</li>
+					</ol>
+					<strong>Note: Double check that chosen port is free to use.</strong>
+					]]>
 				</description>
 				<default>2016</default>
 			</parameter>
@@ -41,7 +45,7 @@
 
 	</bridge-type>
 
-	<channel-type id="connected-devices" advanced="false">
+	<channel-type id="connected-devices">
 		<item-type>Number</item-type>
 		<label>Connected devices</label>
 		<description>Indicates how many devices are connected to this server.</description>
