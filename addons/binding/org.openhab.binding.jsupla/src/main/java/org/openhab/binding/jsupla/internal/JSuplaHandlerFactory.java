@@ -59,7 +59,7 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
             if (suplaDeviceRegistryNonNull != null) {
                 suplaDeviceRegistryNonNull.addSuplaDevice(suplaDeviceHandler);
             } else {
-                throw new NullPointerException("suplaDeviceRegistry");
+                throw new IllegalStateException("suplaDeviceRegistry is null!");
             }
             return suplaDeviceHandler;
         } else if (JSUPLA_SERVER_TYPE.equals(thingTypeUID)) {
