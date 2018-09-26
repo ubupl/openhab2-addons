@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Hashtable;
 
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.JSUPLA_SERVER_TYPE;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_TYPE;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.JSUPLA_SERVER_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
 /**
  * The {@link JSuplaHandlerFactory} is responsible for creating things and thing

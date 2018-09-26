@@ -41,7 +41,7 @@ import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEVICE_TIMEOUT_SEC;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.DEVICE_TIMEOUT_SEC;
 import static pl.grzeslowski.jsupla.protocol.api.ResultCode.SUPLA_RESULTCODE_TRUE;
 import static reactor.core.publisher.Flux.just;
 

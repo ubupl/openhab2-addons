@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_GUID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPLA_DEVICE_TYPE;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_GUID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
 /**
  * @author Grzeslowski - Initial contribution

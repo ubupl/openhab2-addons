@@ -15,14 +15,14 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import java.util.Set;
 
 /**
- * The {@link jSuplaBindingConstants} class defines common constants, which are
+ * The {@link JSuplaBindingConstants} class defines common constants, which are
  * used across the whole binding.
  *
  * @author Grzeslowski - Initial contribution
  */
 @SuppressWarnings("WeakerAccess")
 @NonNullByDefault
-public class jSuplaBindingConstants {
+public class JSuplaBindingConstants {
 
     public static final String BINDING_ID = "jsupla";
 

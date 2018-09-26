@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.Random;
 
 import static java.lang.String.valueOf;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.CONFIG_PORT;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.DEFAULT_PORT;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.JSUPLA_SERVER_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_PORT;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.DEFAULT_PORT;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.JSUPLA_SERVER_TYPE;
 
 /**
  * @author Grzeslowski - Initial contribution

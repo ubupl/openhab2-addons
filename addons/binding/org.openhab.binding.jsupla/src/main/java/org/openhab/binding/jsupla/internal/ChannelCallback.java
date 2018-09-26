@@ -13,7 +13,7 @@ import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.builder.ChannelBuilder;
 import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
-import org.openhab.binding.jsupla.jSuplaBindingConstants;
+import org.openhab.binding.jsupla.JSuplaBindingConstants;
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.ChannelValueSwitch;
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.DecimalValue;
 import pl.grzeslowski.jsupla.protocoljava.api.channels.values.OnOff;
@@ -27,13 +27,13 @@ import pl.grzeslowski.jsupla.protocoljava.api.channels.values.UnknownValue;
 
 import static java.lang.String.valueOf;
 import static java.util.Objects.requireNonNull;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.DECIMAL_CHANNEL_ID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.RGB_CHANNEL_ID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.ROLLER_SHUTTER_CHANNEL_ID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.SWITCH_CHANNEL_ID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.TEMPERATURE_AND_HUMIDITY_CHANNEL_ID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.TEMPERATURE_CHANNEL_ID;
-import static org.openhab.binding.jsupla.jSuplaBindingConstants.Channels.UNKNOWN_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.DECIMAL_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.RGB_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.ROLLER_SHUTTER_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.SWITCH_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.TEMPERATURE_AND_HUMIDITY_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.TEMPERATURE_CHANNEL_ID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.Channels.UNKNOWN_CHANNEL_ID;
 
 /**
  * @author Grzeslowski - Initial contribution
@@ -52,7 +52,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
     }
 
     private ChannelTypeUID createChannelTypeUID(String id) {
-        return new ChannelTypeUID(jSuplaBindingConstants.BINDING_ID, id);
+        return new ChannelTypeUID(JSuplaBindingConstants.BINDING_ID, id);
     }
 
     @Override
