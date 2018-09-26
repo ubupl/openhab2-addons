@@ -4,5 +4,5 @@
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="output" path="target/classes"/>
-	<classpathentry kind="lib" path="libs/nettyServer-fat-0.1.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="libs/nettyServer-fat-0.9.0.jar"/>
 </classpath>
