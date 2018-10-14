@@ -21,7 +21,7 @@
 					This is ID that devices will use to register to your server.
 				</description>
 			</parameter>
-			<parameter name="serverAccessIdPassword" type="integer" required="true">
+			<parameter name="serverAccessIdPassword" type="text" required="true">
 				<label>Server Access ID Password</label>
 				<description>
 					This is password required to register to your server.
