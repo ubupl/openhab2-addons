@@ -81,7 +81,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
         try {
             final Configuration config = this.getConfig();
             serverAccessId = ((BigDecimal) config.get(CONFIG_SERVER_ACCESS_ID)).intValue();
-            serverAccessIdPassword = String.valueOf(((BigDecimal) config.get(CONFIG_SERVER_ACCESS_ID_PASSWORD)).intValue()).toCharArray();
+            serverAccessIdPassword = ((String) config.get(CONFIG_SERVER_ACCESS_ID_PASSWORD)).toCharArray();
             port = ((BigDecimal) config.get(CONFIG_PORT)).intValue();
             server = factory.createNewServer(buildServerProperties(port));
             server.getNewChannelsPipe().subscribe(
