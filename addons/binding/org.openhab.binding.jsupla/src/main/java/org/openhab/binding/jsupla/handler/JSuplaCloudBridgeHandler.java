@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2018 by the respective copyright holders.
- *
+ * <p>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -44,6 +44,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_EMAIL;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_EMAIL_PASSWORD;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_PORT;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID_PASSWORD;
@@ -67,6 +69,8 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private int port;
     private int serverAccessId;
     private char[] serverAccessIdPassword;
+    private String email;
+    private char[] emailPassword;
 
     public JSuplaCloudBridgeHandler(final Bridge bridge, final SuplaDeviceRegistry suplaDeviceRegistry) {
         super(bridge);
@@ -82,6 +86,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
             final Configuration config = this.getConfig();
             serverAccessId = ((BigDecimal) config.get(CONFIG_SERVER_ACCESS_ID)).intValue();
             serverAccessIdPassword = ((String) config.get(CONFIG_SERVER_ACCESS_ID_PASSWORD)).toCharArray();
+            email = (String) config.get(CONFIG_EMAIL);
+            emailPassword = ((String) config.get(CONFIG_EMAIL_PASSWORD)).toCharArray();
+
             port = ((BigDecimal) config.get(CONFIG_PORT)).intValue();
             server = factory.createNewServer(buildServerProperties(port));
             server.getNewChannelsPipe().subscribe(

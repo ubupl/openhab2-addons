@@ -44,6 +44,8 @@ public class JSuplaBindingConstants {
     public static final int DEFAULT_PORT = 2016;
     public static final String CONFIG_SERVER_ACCESS_ID = "serverAccessId";
     public static final String CONFIG_SERVER_ACCESS_ID_PASSWORD = "serverAccessIdPassword";
+    public static final String CONFIG_EMAIL = "email";
+    public static final String CONFIG_EMAIL_PASSWORD = "emailPassword";
     public static final String CONFIG_PORT = "port";
     public static final String CONNECTED_DEVICES_CHANNEL_ID = "server-devices";
 
