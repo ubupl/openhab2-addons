@@ -16,18 +16,27 @@
 
 		<representation-property>port</representation-property>
 		<config-description>
-			<parameter name="serverAccessId" type="integer" required="true" min="1">
+			<parameter-group name="accessIdLogin">
+				<label>Access ID Login</label>
+				<description>
+					If you want to authenticate your devices with access ID flow fill
+					&lt;strong&gt;both&lt;/strong&gt; &lt;em&gt;Server Access ID&lt;/em&gt; and
+					&lt;em&gt;Server Access ID Password&lt;/em&gt;
+				</description>
+			</parameter-group>
+			<parameter name="serverAccessId" type="integer" min="1" groupName="accessIdLogin">
 				<label>Server Access ID</label>
 				<description>
 					This is ID that devices will use to register to your server.
 				</description>
 			</parameter>
-			<parameter name="serverAccessIdPassword" type="text" required="true">
+			<parameter name="serverAccessIdPassword" type="text" groupName="accessIdLogin">
 				<label>Server Access ID Password</label>
 				<description>
 					This is password required to register to your server.
 				</description>
 			</parameter>
+
 			<parameter name="port" type="integer" required="true" min="1">
 				<label>Server port</label>
 				<description>
