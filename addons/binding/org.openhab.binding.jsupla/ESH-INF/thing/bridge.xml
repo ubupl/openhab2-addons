@@ -37,6 +37,29 @@
 				</description>
 			</parameter>
 
+			<parameter-group name="emailIdLogin">
+				<label>Email Login</label>
+				<description>
+					If you want to authenticate your devices with email/password flow fill
+					&lt;strong&gt;both&lt;/strong&gt; &lt;em&gt;Email&lt;/em&gt; and
+					&lt;em&gt;Email Password&lt;/em&gt;
+				</description>
+			</parameter-group>
+			<parameter name="email" type="text" min="1" groupName="emailIdLogin">
+				<label>Email</label>
+				<description>
+					This is email that devices will use to register to your server.&lt;br/&gt;
+					&lt;em&gt;This email address does not need to be reachable. It won't be used in any way, i.e. to send email to.&lt;/em&gt;
+				</description>
+				<context>email</context>
+			</parameter>
+			<parameter name="emailAccessPassword" type="text" groupName="emailIdLogin">
+				<label>Email Password</label>
+				<description>
+					This is password required to register to your server.
+				</description>
+			</parameter>
+			
 			<parameter name="port" type="integer" required="true" min="1">
 				<label>Server port</label>
 				<description>
