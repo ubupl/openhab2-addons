@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.openuv.internal.handler;
 
@@ -15,6 +19,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -50,94 +55,59 @@ import com.google.gson.JsonDeserializer;
 @NonNullByDefault
 public class OpenUVBridgeHandler extends BaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(OpenUVBridgeHandler.class);
+    private static final int REQUEST_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(30);
 
-    private final Gson gson;
-    private @Nullable String apikey;
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(DecimalType.class,
+                    (JsonDeserializer<DecimalType>) (json, type, jsonDeserializationContext) -> DecimalType
+                            .valueOf(json.getAsJsonPrimitive().getAsString()))
+            .registerTypeAdapter(ZonedDateTime.class,
+                    (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime
+                            .parse(json.getAsJsonPrimitive().getAsString()))
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+
     private Map<ThingUID, @Nullable ServiceRegistration<?>> discoveryServiceRegs = new HashMap<>();
-
-    private String error = "";
-    private @Nullable String statusDescr;
+    private final Properties header = new Properties();
 
     public OpenUVBridgeHandler(Bridge bridge) {
         super(bridge);
-        gson = new GsonBuilder()
-                .registerTypeAdapter(DecimalType.class,
-                        (JsonDeserializer<DecimalType>) (json, type, jsonDeserializationContext) -> DecimalType
-                                .valueOf(json.getAsJsonPrimitive().getAsString()))
-                .registerTypeAdapter(ZonedDateTime.class,
-                        (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> ZonedDateTime
-                                .parse(json.getAsJsonPrimitive().getAsString()))
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
     }
 
     @Override
     public void initialize() {
-        boolean validConfig = false;
+        String error = "";
+        String errorDetail = null;
 
         logger.debug("Initializing OpenUV API bridge handler.");
         Configuration config = getThing().getConfiguration();
-
-        OpenUVJsonResponse result = null;
-        String errorDetail = null;
+        header.put("x-access-token", config.get(OpenUVBindingConstants.APIKEY));
 
         // Check if an api key has been provided during the bridge creation
         if (StringUtils.trimToNull((String) config.get(OpenUVBindingConstants.APIKEY)) == null) {
             error += " Parameter 'apikey' must be configured.";
-            statusDescr = "Missing API key";
         } else {
-            setApikey((String) config.get(OpenUVBindingConstants.APIKEY));
             // Check if the provided api key is valid for use with the OpenUV service
             try {
                 // Run the HTTP request and get the JSON response
-                String response = null;
-
-                try {
-                    Properties header = new Properties();
-                    header.put("x-access-token", getApikey());
-
-                    response = HttpUtil.executeUrl("GET", BASE_URL + "?lat=0&lng=0", header, null, null, 2000);
-                    logger.debug("apiResponse = {}", response);
-                    // Map the JSON response to an object
-                    result = gson.fromJson(response, OpenUVJsonResponse.class);
-                    if ((result.getError() != null) && (result.getError().equals("Invalid API Key"))) {
-                        error = "API key has to be fixed";
-                        errorDetail = result.getError();
-                        statusDescr = "Error : Invalid Key";
-                    } else {
-                        validConfig = true;
-                    }
-
-                } catch (IllegalArgumentException e) {
-                    errorDetail = e.getMessage();
-                    statusDescr = "@text/offline.uri-error";
+                OpenUVJsonResponse response = getUVData("0", "0", null);
+                if ("Invalid API Key".equalsIgnoreCase(response.getError())) {
+                    error = "API key has to be fixed";
+                    errorDetail = response.getError();
+                } else {
+                    updateStatus(ThingStatus.ONLINE);
                 }
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 error = "Error running OpenUV API request";
                 errorDetail = e.getMessage();
-                statusDescr = "@text/offline.comm-error-running-request";
             }
         }
 
         // Updates the thing status accordingly
-        if (validConfig) {
-            updateStatus(ThingStatus.ONLINE);
-        } else {
+        if (!"".equals(error)) {
             error = error.trim();
             logger.debug("Disabling thing '{}': Error '{}': {}", getThing().getUID(), error, errorDetail);
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, statusDescr);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, error);
         }
-    }
-
-    public @Nullable String getApikey() {
-        return apikey;
-    }
-
-    public void setApikey(String apikey) {
-        this.apikey = apikey;
-    }
-
-    public Gson getGson() {
-        return this.gson;
     }
 
     @Override
@@ -156,11 +126,25 @@ public class OpenUVBridgeHandler extends BaseBridgeHandler {
     @Override
     public void handleRemoval() {
         // removes the old registration service associated to the bridge, if existing
-        ServiceRegistration<?> dis = this.getDiscoveryServiceRegs().get(this.getThing().getUID());
-        if (null != dis) {
+        ServiceRegistration<?> dis = getDiscoveryServiceRegs().get(this.getThing().getUID());
+        if (dis != null) {
             dis.unregister();
         }
         super.handleRemoval();
+    }
+
+    public OpenUVJsonResponse getUVData(String latitude, String longitude, @Nullable String altitude)
+            throws IOException {
+        StringBuilder urlBuilder = new StringBuilder(BASE_URL).append("?lat=").append(latitude).append("&lng=")
+                .append(longitude);
+
+        if (altitude != null) {
+            urlBuilder.append("&alt=").append(altitude);
+        }
+        String jsonData = HttpUtil.executeUrl("GET", urlBuilder.toString(), header, null, null, REQUEST_TIMEOUT);
+        logger.debug("URL = {}", jsonData);
+
+        return gson.fromJson(jsonData, OpenUVJsonResponse.class);
     }
 
 }

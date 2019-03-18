@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.squeezebox.internal;
 
@@ -12,6 +16,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.smarthome.core.audio.AudioFormat;
 import org.eclipse.smarthome.core.audio.AudioHTTPServer;
 import org.eclipse.smarthome.core.audio.AudioSink;
@@ -31,17 +36,19 @@ import org.slf4j.LoggerFactory;
 /**
  * This makes a SqueezeBox Player serve as an {@link AudioSink}-
  *
- * @author Mark Hilbush - Implement AudioSink and notifications
+ * @author Mark Hilbush - Initial contribution
+ * @author Mark Hilbush - Add callbackUrl
  */
 public class SqueezeBoxAudioSink implements AudioSink {
-
-    private Logger logger = LoggerFactory.getLogger(SqueezeBoxAudioSink.class);
+    private final Logger logger = LoggerFactory.getLogger(SqueezeBoxAudioSink.class);
 
     private static final HashSet<AudioFormat> SUPPORTED_FORMATS = new HashSet<>();
     private static final HashSet<Class<? extends AudioStream>> SUPPORTED_STREAMS = new HashSet<>();
 
     // Needed because Squeezebox does multiple requests for the stream
-    private final int STREAM_TIMEOUT = 15;
+    private static final int STREAM_TIMEOUT = 15;
+
+    private String callbackUrl;
 
     static {
         SUPPORTED_FORMATS.add(AudioFormat.WAV);
@@ -54,9 +61,14 @@ public class SqueezeBoxAudioSink implements AudioSink {
     private AudioHTTPServer audioHTTPServer;
     private SqueezeBoxPlayerHandler playerHandler;
 
-    public SqueezeBoxAudioSink(SqueezeBoxPlayerHandler playerHandler, AudioHTTPServer audioHTTPServer) {
+    public SqueezeBoxAudioSink(SqueezeBoxPlayerHandler playerHandler, AudioHTTPServer audioHTTPServer,
+            String callbackUrl) {
         this.playerHandler = playerHandler;
         this.audioHTTPServer = audioHTTPServer;
+        this.callbackUrl = callbackUrl;
+        if (StringUtils.isNotEmpty(callbackUrl)) {
+            logger.debug("SqueezeBox AudioSink created with callback URL {}", callbackUrl);
+        }
     }
 
     @Override
@@ -91,7 +103,8 @@ public class SqueezeBoxAudioSink implements AudioSink {
             }
 
             // Form the URL for streaming the notification from the OH2 web server
-            String host = playerHandler.getHostAndPort();
+            // Use the callback URL if it is set in the binding configuration
+            String host = StringUtils.isEmpty(callbackUrl) ? playerHandler.getHostAndPort() : callbackUrl;
             if (host == null) {
                 logger.warn("Unable to get host/port from which to stream notification");
                 return;
