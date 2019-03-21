@@ -26,9 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.protocol.impl.calltypes.CallTypeParserImpl;
 import pl.grzeslowski.jsupla.protocol.impl.decoders.DecoderFactoryImpl;
-import pl.grzeslowski.jsupla.protocol.impl.decoders.PrimitiveDecoderImpl;
 import pl.grzeslowski.jsupla.protocol.impl.encoders.EncoderFactoryImpl;
-import pl.grzeslowski.jsupla.protocol.impl.encoders.PrimitiveEncoderImpl;
 import pl.grzeslowski.jsupla.server.api.Channel;
 import pl.grzeslowski.jsupla.server.api.Server;
 import pl.grzeslowski.jsupla.server.api.ServerFactory;
@@ -44,8 +42,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_AUTH_KEY;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_EMAIL;
-import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_EMAIL_PASSWORD;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_PORT;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CONFIG_SERVER_ACCESS_ID_PASSWORD;
@@ -70,7 +68,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private int serverAccessId;
     private char[] serverAccessIdPassword;
     private String email;
-    private char[] emailPassword;
+    private String authKey;
 
     public JSuplaCloudBridgeHandler(final Bridge bridge, final SuplaDeviceRegistry suplaDeviceRegistry) {
         super(bridge);
@@ -87,7 +85,7 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
             serverAccessId = ((BigDecimal) config.get(CONFIG_SERVER_ACCESS_ID)).intValue();
             serverAccessIdPassword = ((String) config.get(CONFIG_SERVER_ACCESS_ID_PASSWORD)).toCharArray();
             email = (String) config.get(CONFIG_EMAIL);
-            emailPassword = ((String) config.get(CONFIG_EMAIL_PASSWORD)).toCharArray();
+            authKey = (String) config.get(CONFIG_AUTH_KEY);
 
             port = ((BigDecimal) config.get(CONFIG_PORT)).intValue();
             server = factory.createNewServer(buildServerProperties(port));
@@ -134,8 +132,8 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
     private ServerFactory buildServerFactory() {
         return new NettyServerFactory(
                 new CallTypeParserImpl(),
-                new DecoderFactoryImpl(new PrimitiveDecoderImpl()),
-                new EncoderFactoryImpl(new PrimitiveEncoderImpl()));
+                DecoderFactoryImpl.INSTANCE,
+                EncoderFactoryImpl.INSTANCE);
     }
 
     private ServerProperties buildServerProperties(int port)
@@ -157,7 +155,9 @@ public class JSuplaCloudBridgeHandler extends BaseBridgeHandler {
                 jSuplaDiscoveryService,
                 channel,
                 scheduledPool,
-                suplaDeviceRegistry);
+                suplaDeviceRegistry,
+                email,
+                authKey);
 
         channel.getMessagePipe().subscribe(
                 jSuplaChannel::onNext,

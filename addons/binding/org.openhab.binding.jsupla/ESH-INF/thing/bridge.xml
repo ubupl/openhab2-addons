@@ -53,7 +53,7 @@
 				</description>
 				<context>email</context>
 			</parameter>
-			<parameter name="emailAccessPassword" type="text" groupName="emailIdLogin">
+			<parameter name="authKey" type="text" groupName="emailIdLogin">
 				<label>Email Password</label>
 				<description>
 					This is password required to register to your server.

@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2018 by the respective copyright holders.
- *
+ * <p>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -19,8 +19,11 @@ import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.PingServer;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.dcs.SetActivityTimeout;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.DeviceChannelValue;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.DeviceChannels;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.DeviceChannelsB;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDevice;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDeviceC;
+import pl.grzeslowski.jsupla.protocoljava.api.entities.ds.RegisterDeviceD;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.sd.RegisterDeviceResult;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.sdc.PingServerResultClient;
 import pl.grzeslowski.jsupla.protocoljava.api.entities.sdc.SetActivityTimeoutResult;
@@ -52,8 +55,15 @@ public final class JSuplaChannel {
     private final SuplaDeviceRegistry suplaDeviceRegistry;
     private Logger logger = LoggerFactory.getLogger(JSuplaChannel.class);
     private final JSuplaCloudBridgeHandler jSuplaCloudBridgeHandler;
+
+    // Location Authorization
     private final int serverAccessId;
     private final char[] serverAccessIdPassword;
+
+    // Email authorization
+    private final String email;
+    private final String authKey;
+
     private final JSuplaDiscoveryService jSuplaDiscoveryService;
     private final Channel channel;
     private final ScheduledExecutorService scheduledPool;
@@ -69,7 +79,9 @@ public final class JSuplaChannel {
                          final JSuplaDiscoveryService jSuplaDiscoveryService,
                          final Channel channel,
                          final ScheduledExecutorService scheduledPool,
-                         final SuplaDeviceRegistry suplaDeviceRegistry) {
+                         final SuplaDeviceRegistry suplaDeviceRegistry,
+                         final String email,
+                         final String authKey) {
         this.jSuplaCloudBridgeHandler = requireNonNull(jSuplaCloudBridgeHandler);
         this.serverAccessId = serverAccessId;
         this.serverAccessIdPassword = serverAccessIdPassword;
@@ -77,27 +89,48 @@ public final class JSuplaChannel {
         this.channel = channel;
         this.scheduledPool = requireNonNull(scheduledPool);
         this.suplaDeviceRegistry = requireNonNull(suplaDeviceRegistry);
+        this.email = requireNonNull(email);
+        this.authKey = requireNonNull(authKey);
     }
 
     public synchronized void onNext(final ToServerEntity entity) {
         logger.trace("{} -> {}", guid, entity);
         lastMessageFromDevice.set(now().getEpochSecond());
         if (!authorized) {
+            final Runnable auth;
+            final DeviceChannels channels;
+            final String name;
             if (entity instanceof RegisterDevice) {
                 final RegisterDevice registerDevice = (RegisterDevice) entity;
-                guid = registerDevice.getGuid();
-                logger = LoggerFactory.getLogger(this.getClass().getName() + "." + guid);
-                authorize(guid, registerDevice.getLocationId(), registerDevice.getLocationPassword());
-                if (authorized) {
-                    sendDeviceToDiscoveryInbox(registerDevice);
-                    sendRegistrationConfirmation();
-                    bindToThingHandler(registerDevice);
+                auth = () -> authorizeForLocation(registerDevice.getGuid(), registerDevice.getLocationId(), registerDevice.getLocationPassword());
+                this.guid = registerDevice.getGuid();
+                channels = registerDevice.getChannels();
+                if (registerDevice instanceof RegisterDeviceC) {
+                    final RegisterDeviceC registerDeviceC = (RegisterDeviceC) registerDevice;
+                    final String serverName = registerDeviceC.getServerName();
+                    if (isNullOrEmpty(serverName)) {
+                        name = registerDeviceC.getName();
+                    } else {
+                        name = registerDeviceC.getName() + " " + serverName;
+                    }
                 } else {
-                    logger.debug("Authorization failed for GUID {}", guid);
+                    name = registerDevice.getName();
                 }
+            } else if (entity instanceof RegisterDeviceD) {
+                RegisterDeviceD registerDevice = (RegisterDeviceD) entity;
+                auth = () -> authorizeForEmail(registerDevice.getGuid(), registerDevice.getEmail(), registerDevice.getAuthKey());
+                this.guid = registerDevice.getGuid();
+                channels = new DeviceChannelsB(registerDevice.getChannels());
+                name = registerDevice.getName();
             } else {
                 logger.debug("Device in channel is not authorized in but is also not sending RegisterClient entity! {}",
                         entity);
+                auth = null;
+                channels = null;
+                name = null;
+            }
+            if (auth != null) {
+                authorize(auth, channels, name);
             }
         } else if (entity instanceof SetActivityTimeout) {
             setActivityTimeout();
@@ -108,6 +141,48 @@ public final class JSuplaChannel {
         } else {
             logger.debug("Do not handling this command: {}", entity);
         }
+    }
+
+    private void authorize(Runnable authorize, final DeviceChannels channels, final String name) {
+        logger = LoggerFactory.getLogger(this.getClass().getName() + "." + guid);
+        authorize.run();
+        if (authorized) {
+            jSuplaDiscoveryService.addSuplaDevice(guid, name);
+            sendRegistrationConfirmation();
+            bindToThingHandler(channels);
+        } else {
+            logger.debug("Authorization failed for GUID {}", guid);
+        }
+    }
+
+    private void authorizeForLocation(final String guid, final int accessId, final char[] accessIdPassword) {
+        if (serverAccessId != accessId) {
+            logger.debug("Wrong accessId for GUID {}; {} != {}", guid, accessId, serverAccessId);
+            authorized = false;
+            return;
+        }
+        if (!isGoodPassword(accessIdPassword)) {
+            logger.debug("Wrong accessIdPassword for GUID {}", guid);
+            authorized = false;
+            return;
+        }
+        logger.debug("Authorizing GUID {}", guid);
+        authorized = true;
+    }
+
+    private void authorizeForEmail(final String guid, final String email, final String authKey) {
+        if (!this.email.equals(email)) {
+            logger.debug("Wrong email for GUID {}; {} != {}", guid, email, this.email);
+            authorized = false;
+            return;
+        }
+        if (!this.authKey.equals(authKey)) {
+            logger.debug("Wrong auth key for GUID {}; {} != {}", guid, authKey, this.authKey);
+            authorized = false;
+            return;
+        }
+        logger.debug("Authorizing GUID {}", guid);
+        authorized = true;
     }
 
     public void onError(final Throwable ex) {
@@ -168,21 +243,6 @@ public final class JSuplaChannel {
                 .subscribe(date -> logger.trace("Send register response at {}", date.format(ISO_DATE_TIME)));
     }
 
-    private void authorize(final String guid, final int accessId, final char[] accessIdPassword) {
-        if (serverAccessId != accessId) {
-            logger.debug("Wrong accessId for GUID {}; {} != {}", guid, accessId, serverAccessId);
-            authorized = false;
-            return;
-        }
-        if (!isGoodPassword(accessIdPassword)) {
-            logger.debug("Wrong accessIdPassword for GUID {}", guid);
-            authorized = false;
-            return;
-        }
-        logger.debug("Authorizing GUID {}", guid);
-        authorized = true;
-    }
-
     private boolean isGoodPassword(final char[] accessIdPassword) {
         if (serverAccessIdPassword.length > accessIdPassword.length) {
             return false;
@@ -195,32 +255,16 @@ public final class JSuplaChannel {
         return true;
     }
 
-    private void sendDeviceToDiscoveryInbox(final RegisterDevice registerClient) {
-        final String name;
-        if (registerClient instanceof RegisterDeviceC) {
-            final RegisterDeviceC registerDeviceC = (RegisterDeviceC) registerClient;
-            final String serverName = registerDeviceC.getServerName();
-            if (isNullOrEmpty(serverName)) {
-                name = registerDeviceC.getName();
-            } else {
-                name = registerDeviceC.getName() + " " + serverName;
-            }
-        } else {
-            name = registerClient.getName();
-        }
-        jSuplaDiscoveryService.addSuplaDevice(registerClient.getGuid(), name);
-    }
-
-    private void bindToThingHandler(final RegisterDevice registerDevice) {
+    private void bindToThingHandler(final DeviceChannels channels) {
         final Optional<SuplaDeviceHandler> suplaDevice = suplaDeviceRegistry.getSuplaDevice(guid);
         if (suplaDevice.isPresent()) {
             suplaDeviceHandler = suplaDevice.get();
-            suplaDeviceHandler.setChannels(registerDevice.getChannels());
+            suplaDeviceHandler.setChannels(channels);
             suplaDeviceHandler.setSuplaChannel(channel);
         } else {
             logger.debug("Thing not found. Binding of channels will happen later...");
             scheduledPool.schedule(
-                    () -> bindToThingHandler(registerDevice),
+                    () -> bindToThingHandler(channels),
                     DEVICE_TIMEOUT_SEC,
                     SECONDS);
         }
