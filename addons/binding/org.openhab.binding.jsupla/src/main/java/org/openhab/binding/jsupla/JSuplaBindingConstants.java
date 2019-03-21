@@ -28,17 +28,23 @@ public class JSuplaBindingConstants {
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID SUPLA_DEVICE_TYPE = new ThingTypeUID(BINDING_ID, "device");
+    public static final ThingTypeUID SUPLA_CLOUD_DEVICE_TYPE = new ThingTypeUID(BINDING_ID, "dcloudevice");
     public static final ThingTypeUID JSUPLA_SERVER_TYPE = new ThingTypeUID(BINDING_ID, "server-bridge");
+    public static final ThingTypeUID SUPLA_CLOUD_SERVER_TYPE = new ThingTypeUID(BINDING_ID, "supla-cloud-bridge");
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = ImmutableSet.of(SUPLA_DEVICE_TYPE, JSUPLA_SERVER_TYPE);
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = ImmutableSet.of(
+            SUPLA_DEVICE_TYPE,
+            SUPLA_CLOUD_DEVICE_TYPE,
+            JSUPLA_SERVER_TYPE,
+            SUPLA_CLOUD_SERVER_TYPE);
 
     // List of all Channel ids
     public static final String LIGHT_CHANNEL = "light-channel";
     public static final String SWITCH_CHANNEL = "switch-channel";
 
-    // supla device
+    // supla device and cloud-device
     public static final String SUPLA_DEVICE_GUID = "jsupla-device-guid";
-    
+
     // jSuplaServer constants
     public static final int DEVICE_TIMEOUT_SEC = 10;
     public static final int DEFAULT_PORT = 2016;

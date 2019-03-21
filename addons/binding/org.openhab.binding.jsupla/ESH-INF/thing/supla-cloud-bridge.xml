@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="jSupla"
+						  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+						  xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+						  xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0
+						  org.eclipse.smarthome.thing-description.xsd">
+
+	<bridge-type id="supla-cloud-bridge">
+		<label>Bridge for Supla Cloud</label>
+		<description>
+			This bridge allows OpenHAB to connect via REST API to Supla Cloud.
+			Please double check that you enabled REST API in your server config.
+		</description>
+
+		<config-description>
+			<parameter name="oAuthToken" type="text" required="true">
+				<label>OAuth Token</label>
+				<description>
+					<![CDATA[
+						OAuth token generated from <a href="https://cloud.supla.org/integrations/tokens"> Supla Cloud</a>.
+					]]></description>
+				<context>password</context>
+			</parameter>
+			<parameter name="refreshInterval" type="integer" required="false" min="10" max="600" unit="s">
+				<label>Refresh Interval</label>
+				<description>Refresh time in seconds.</description>
+				<default>30</default>
+			</parameter>
+		</config-description>
+
+	</bridge-type>
+</thing:thing-descriptions>
