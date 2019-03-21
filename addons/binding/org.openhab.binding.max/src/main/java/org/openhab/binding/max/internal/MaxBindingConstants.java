@@ -1,14 +1,17 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.max.internal;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -89,15 +92,14 @@ public class MaxBindingConstants {
     public static final String BUTTON_ACTION_VALUE = "1234";
     public static final int BUTTON_NOACTION_VALUE = -1;
 
-    public static final Collection<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableList(Stream
-            .of(HEATINGTHERMOSTAT_THING_TYPE, HEATINGTHERMOSTATPLUS_THING_TYPE, WALLTHERMOSTAT_THING_TYPE,
-                    ECOSWITCH_THING_TYPE, SHUTTERCONTACT_THING_TYPE, CUBEBRIDGE_THING_TYPE)
-            .collect(Collectors.toList()));
-
     public static final Set<ThingTypeUID> SUPPORTED_DEVICE_THING_TYPES_UIDS = Collections.unmodifiableSet(
             Stream.of(HEATINGTHERMOSTAT_THING_TYPE, HEATINGTHERMOSTATPLUS_THING_TYPE, WALLTHERMOSTAT_THING_TYPE,
                     ECOSWITCH_THING_TYPE, SHUTTERCONTACT_THING_TYPE).collect(Collectors.toSet()));
 
     public static final Set<ThingTypeUID> SUPPORTED_BRIDGE_THING_TYPES_UIDS = Collections
             .unmodifiableSet(Stream.of(CUBEBRIDGE_THING_TYPE).collect(Collectors.toSet()));
+
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(
+            Stream.concat(SUPPORTED_DEVICE_THING_TYPES_UIDS.stream(), SUPPORTED_BRIDGE_THING_TYPES_UIDS.stream())
+                    .collect(Collectors.toSet()));
 }

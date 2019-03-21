@@ -1,15 +1,20 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.squeezebox.internal;
 
 import static org.openhab.binding.squeezebox.internal.SqueezeBoxBindingConstants.*;
 
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -35,6 +40,7 @@ import org.openhab.binding.squeezebox.internal.handler.SqueezeBoxPlayerEventList
 import org.openhab.binding.squeezebox.internal.handler.SqueezeBoxPlayerHandler;
 import org.openhab.binding.squeezebox.internal.handler.SqueezeBoxServerHandler;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -46,11 +52,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Dan Cunningham - Initial contribution
  * @author Mark Hilbush - Cancel request player job when handler removed
+ * @author Mark Hilbush - Add callbackUrl
  */
 @Component(service = ThingHandlerFactory.class, configurationPid = "binding.squeezebox")
 public class SqueezeBoxHandlerFactory extends BaseThingHandlerFactory {
-
-    private Logger logger = LoggerFactory.getLogger(SqueezeBoxHandlerFactory.class);
+    private final Logger logger = LoggerFactory.getLogger(SqueezeBoxHandlerFactory.class);
 
     private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Stream
             .concat(SqueezeBoxServerHandler.SUPPORTED_THING_TYPES_UIDS.stream(),
@@ -66,9 +72,19 @@ public class SqueezeBoxHandlerFactory extends BaseThingHandlerFactory {
 
     private SqueezeBoxStateDescriptionOptionsProvider stateDescriptionProvider;
 
+    // Callback url (scheme+server+port) to use for playing notification sounds
+    private String callbackUrl = null;
+
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID);
+    }
+
+    @Override
+    protected void activate(ComponentContext componentContext) {
+        super.activate(componentContext);
+        Dictionary<String, Object> properties = componentContext.getProperties();
+        callbackUrl = (String) properties.get("callbackUrl");
     }
 
     @Override
@@ -89,7 +105,7 @@ public class SqueezeBoxHandlerFactory extends BaseThingHandlerFactory {
 
             // Register the player as an audio sink
             logger.trace("Registering an audio sink for player thing {}", thing.getUID());
-            SqueezeBoxAudioSink audioSink = new SqueezeBoxAudioSink(playerHandler, audioHTTPServer);
+            SqueezeBoxAudioSink audioSink = new SqueezeBoxAudioSink(playerHandler, audioHTTPServer, callbackUrl);
             @SuppressWarnings("unchecked")
             ServiceRegistration<AudioSink> reg = (ServiceRegistration<AudioSink>) bundleContext
                     .registerService(AudioSink.class.getName(), audioSink, new Hashtable<String, Object>());
@@ -124,7 +140,6 @@ public class SqueezeBoxHandlerFactory extends BaseThingHandlerFactory {
 
     @Override
     protected synchronized void removeHandler(ThingHandler thingHandler) {
-
         if (thingHandler instanceof SqueezeBoxServerHandler) {
             logger.trace("removing handler for bridge thing {}", thingHandler.getThing());
 

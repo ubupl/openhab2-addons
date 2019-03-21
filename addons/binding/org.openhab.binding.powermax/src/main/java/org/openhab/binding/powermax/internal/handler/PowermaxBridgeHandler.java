@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.powermax.internal.handler;
 
@@ -140,7 +144,7 @@ public class PowermaxBridgeHandler extends BaseBridgeHandler implements Powermax
 
     private String initializeBridgeSerial(PowermaxSerialConfiguration config) {
         String errorMsg = null;
-        if (StringUtils.isNotBlank(config.serialPort)) {
+        if (StringUtils.isNotBlank(config.serialPort) && !config.serialPort.startsWith("rfc2217")) {
             motionOffDelay = getMotionOffDelaySetting(config.motionOffDelay, DEFAULT_MOTION_OFF_DELAY);
             boolean allowArming = getBooleanSetting(config.allowArming, false);
             boolean allowDisarming = getBooleanSetting(config.allowDisarming, false);
@@ -160,7 +164,11 @@ public class PowermaxBridgeHandler extends BaseBridgeHandler implements Powermax
             commManager = new PowermaxCommManager(config.serialPort, panelType, forceStandardMode, autoSyncTime,
                     serialPortManager);
         } else {
-            errorMsg = "serialPort setting must be defined in thing configuration";
+            if (StringUtils.isNotBlank(config.serialPort) && config.serialPort.startsWith("rfc2217")) {
+                errorMsg = "Please use the IP Connection thing type for a serial over IP connection.";
+            } else {
+                errorMsg = "serialPort setting must be defined in thing configuration";
+            }
         }
         return errorMsg;
     }

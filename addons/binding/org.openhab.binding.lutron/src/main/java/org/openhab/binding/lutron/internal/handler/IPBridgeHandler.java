@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.lutron.internal.handler;
 
@@ -44,9 +48,10 @@ import org.slf4j.LoggerFactory;
  * Handler responsible for communicating with the main Lutron control hub.
  *
  * @author Allan Tong - Initial contribution
+ * @author Bob Adair - Added reconnect and heartbeat config parameters
  */
 public class IPBridgeHandler extends BaseBridgeHandler {
-    private static final Pattern STATUS_REGEX = Pattern.compile("~(OUTPUT|DEVICE|SYSTEM),([^,]+),(.*)");
+    private static final Pattern STATUS_REGEX = Pattern.compile("~(OUTPUT|DEVICE|SYSTEM|TIMECLOCK|MODE),([^,]+),(.*)");
 
     private static final String DB_UPDATE_DATE_FORMAT = "MM/dd/yyyy HH:mm:ss";
 
@@ -64,10 +69,14 @@ public class IPBridgeHandler extends BaseBridgeHandler {
 
     private static final String DEFAULT_USER = "lutron";
     private static final String DEFAULT_PASSWORD = "integration";
+    private static final int DEFAULT_RECONNECT_MINUTES = 5;
+    private static final int DEFAULT_HEARTBEAT_MINUTES = 5;
 
     private final Logger logger = LoggerFactory.getLogger(IPBridgeHandler.class);
 
     private IPBridgeConfig config;
+    private int reconnectInterval;
+    private int heartbeatInterval;
 
     private TelnetSession session;
     private BlockingQueue<LutronCommand> sendQueue = new LinkedBlockingQueue<>();
@@ -75,6 +84,7 @@ public class IPBridgeHandler extends BaseBridgeHandler {
     private ScheduledFuture<?> messageSender;
     private ScheduledFuture<?> keepAlive;
     private ScheduledFuture<?> keepAliveReconnect;
+    private ScheduledFuture<?> connectRetryJob;
 
     private Date lastDbUpdateDate;
     private ServiceRegistration<DiscoveryService> discoveryServiceRegistration;
@@ -118,6 +128,8 @@ public class IPBridgeHandler extends BaseBridgeHandler {
 
         if (validConfiguration(this.config)) {
             LutronDeviceDiscoveryService discovery = new LutronDeviceDiscoveryService(this);
+            reconnectInterval = (config.getReconnect() > 0) ? config.getReconnect() : DEFAULT_RECONNECT_MINUTES;
+            heartbeatInterval = (config.getHeartbeat() > 0) ? config.getHeartbeat() : DEFAULT_HEARTBEAT_MINUTES;
 
             this.discoveryServiceRegistration = this.bundleContext.registerService(DiscoveryService.class, discovery,
                     null);
@@ -147,6 +159,11 @@ public class IPBridgeHandler extends BaseBridgeHandler {
         return true;
     }
 
+    private void scheduleConnectRetry(long waitMinutes) {
+        logger.debug("Scheduling connection retry in {} minutes", waitMinutes);
+        connectRetryJob = scheduler.schedule(this::connect, waitMinutes, TimeUnit.MINUTES);
+    }
+
     private synchronized void connect() {
         if (this.session.isConnected()) {
             return;
@@ -172,11 +189,13 @@ public class IPBridgeHandler extends BaseBridgeHandler {
         } catch (LutronSafemodeException e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "main repeater is in safe mode");
             disconnect();
+            scheduleConnectRetry(reconnectInterval); // Possibly a temporary problem. Try again later.
 
             return;
         } catch (IOException e) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage());
             disconnect();
+            scheduleConnectRetry(reconnectInterval); // Possibly a temporary problem. Try again later.
 
             return;
         } catch (InterruptedException e) {
@@ -197,12 +216,8 @@ public class IPBridgeHandler extends BaseBridgeHandler {
 
         updateStatus(ThingStatus.ONLINE);
 
-        this.keepAlive = this.scheduler.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                sendKeepAlive();
-            }
-        }, 5, 5, TimeUnit.MINUTES);
+        keepAlive = scheduler.scheduleWithFixedDelay(this::sendKeepAlive, heartbeatInterval, heartbeatInterval,
+                TimeUnit.MINUTES);
     }
 
     private void sendCommands() {
@@ -234,6 +249,10 @@ public class IPBridgeHandler extends BaseBridgeHandler {
 
     private synchronized void disconnect() {
         logger.debug("Disconnecting from bridge");
+
+        if (connectRetryJob != null) {
+            connectRetryJob.cancel(true);
+        }
 
         if (this.keepAlive != null) {
             this.keepAlive.cancel(true);
@@ -300,7 +319,7 @@ public class IPBridgeHandler extends BaseBridgeHandler {
             if (thing.getHandler() instanceof LutronHandler) {
                 LutronHandler handler = (LutronHandler) thing.getHandler();
 
-                if (handler.getIntegrationId() == integrationId) {
+                if (handler != null && handler.getIntegrationId() == integrationId) {
                     return handler;
                 }
             }

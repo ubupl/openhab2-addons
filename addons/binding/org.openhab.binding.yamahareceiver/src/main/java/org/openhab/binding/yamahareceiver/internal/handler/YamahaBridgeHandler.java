@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.yamahareceiver.internal.handler;
 
@@ -104,6 +108,8 @@ public class YamahaBridgeHandler extends BaseBridgeHandler
 
     @Override
     public void dispose() {
+        cancelRefreshTimer();
+
         super.dispose();
         disposed = true;
     }
@@ -186,10 +192,18 @@ public class YamahaBridgeHandler extends BaseBridgeHandler
      *                        initiate a refresh.
      */
     private void setupRefreshTimer(int initialWaitTime) {
+        cancelRefreshTimer();
+        logger.trace("Setting up refresh timer with fixed delay {} seconds, starting in {} seconds", bridgeConfig.getRefreshInterval(), initialWaitTime);
+        refreshTimer = scheduler.scheduleWithFixedDelay(() -> updateAllZoneInformation(), initialWaitTime, bridgeConfig.getRefreshInterval(), TimeUnit.SECONDS);
+    }
+
+    /**
+     * Cancels the refresh timer (if one was setup).
+     */
+    private void cancelRefreshTimer() {
         if (refreshTimer != null) {
             refreshTimer.cancel(false);
         }
-        refreshTimer = scheduler.scheduleWithFixedDelay(() -> updateAllZoneInformation(), initialWaitTime, bridgeConfig.getRefreshInterval(), TimeUnit.SECONDS);
     }
 
     /**
@@ -197,6 +211,7 @@ public class YamahaBridgeHandler extends BaseBridgeHandler
      */
     void updateAllZoneInformation() {
         if (disposed) {
+            logger.trace("updateAllZoneInformation will be skipped because the bridge is disposed");
             return;
         }
 
@@ -213,11 +228,14 @@ public class YamahaBridgeHandler extends BaseBridgeHandler
             for (Thing thing : bridge.getThings()) {
                 YamahaZoneThingHandler handler = (YamahaZoneThingHandler) thing.getHandler();
 
-                // If thing still thinks that the bridge is offline, update its status.
-                if (thing.getStatusInfo().getStatusDetail() == ThingStatusDetail.BRIDGE_OFFLINE) {
-                    handler.bridgeStatusChanged(ThingStatusInfoBuilder.create(bridge.getStatus()).build());
-                } else if (handler.isCorrectlyInitialized()) {
-                    handler.updateZoneInformation();
+                // Ensure the handler has been already assigned
+                if (handler != null) {
+                    // If thing still thinks that the bridge is offline, update its status.
+                    if (thing.getStatusInfo().getStatusDetail() == ThingStatusDetail.BRIDGE_OFFLINE) {
+                        handler.bridgeStatusChanged(ThingStatusInfoBuilder.create(bridge.getStatus()).build());
+                    } else if (handler.isCorrectlyInitialized()) {
+                        handler.updateZoneInformation();
+                    }
                 }
             }
         } catch (IOException e) {

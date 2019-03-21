@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2018 by the respective copyright holders.
+ * Copyright (c) 2010-2019 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.gpstracker.internal.profile;
 
@@ -65,8 +69,9 @@ public class GPSTrackerTriggerSwitchProfile implements TriggerProfile {
     @Override
     public void onTriggerFromHandler(String payload) {
         if (payload.startsWith(regionName)) {
-            callback.sendCommand(payload.endsWith("enter") ? OnOffType.ON : OnOffType.OFF);
-            logger.debug("Transition trigger {} handled for region {} by profile.", payload, regionName);
+            OnOffType state = payload.endsWith("enter") ? OnOffType.ON : OnOffType.OFF;
+            callback.sendCommand(state);
+            logger.debug("Transition trigger {} handled for region {} by profile: {}", payload, regionName, state);
         }
     }
 }
