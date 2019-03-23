@@ -20,7 +20,6 @@ import java.util.Set;
  *
  * @author Grzeslowski - Initial contribution
  */
-@SuppressWarnings("WeakerAccess")
 @NonNullByDefault
 public class JSuplaBindingConstants {
 
@@ -28,7 +27,7 @@ public class JSuplaBindingConstants {
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID SUPLA_DEVICE_TYPE = new ThingTypeUID(BINDING_ID, "device");
-    public static final ThingTypeUID SUPLA_CLOUD_DEVICE_TYPE = new ThingTypeUID(BINDING_ID, "dcloudevice");
+    public static final ThingTypeUID SUPLA_CLOUD_DEVICE_TYPE = new ThingTypeUID(BINDING_ID, "cloud-device");
     public static final ThingTypeUID JSUPLA_SERVER_TYPE = new ThingTypeUID(BINDING_ID, "server-bridge");
     public static final ThingTypeUID SUPLA_CLOUD_SERVER_TYPE = new ThingTypeUID(BINDING_ID, "supla-cloud-bridge");
 

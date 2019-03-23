@@ -8,6 +8,7 @@
  */
 package org.openhab.binding.jsupla.internal;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.config.discovery.DiscoveryService;
@@ -17,8 +18,11 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
+import org.openhab.binding.jsupla.handler.CloudBridgeHandler;
+import org.openhab.binding.jsupla.handler.CloudDevice;
 import org.openhab.binding.jsupla.handler.JSuplaCloudBridgeHandler;
 import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
+import org.openhab.binding.jsupla.internal.cloud.CloudDiscovery;
 import org.openhab.binding.jsupla.internal.discovery.JSuplaDiscoveryService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Hashtable;
 
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.JSUPLA_SERVER_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_CLOUD_DEVICE_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_CLOUD_SERVER_TYPE;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_TYPE;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
@@ -55,38 +61,64 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
         // it's done cause tycho-compile raises possible null error
         final @Nullable SuplaDeviceRegistry suplaDeviceRegistryNonNull = suplaDeviceRegistry;
         if (SUPLA_DEVICE_TYPE.equals(thingTypeUID)) {
-            final SuplaDeviceHandler suplaDeviceHandler = new SuplaDeviceHandler(thing);
-            if (suplaDeviceRegistryNonNull != null) {
-                suplaDeviceRegistryNonNull.addSuplaDevice(suplaDeviceHandler);
-            } else {
-                throw new IllegalStateException("suplaDeviceRegistry is null!");
-            }
-            return suplaDeviceHandler;
+            return newSuplaDeviceHandler(thing, suplaDeviceRegistryNonNull);
         } else if (JSUPLA_SERVER_TYPE.equals(thingTypeUID)) {
-            JSuplaCloudBridgeHandler bridgeHandler = new JSuplaCloudBridgeHandler((Bridge) thing, suplaDeviceRegistry);
-            final JSuplaDiscoveryService discovery = registerThingDiscovery(bridgeHandler);
-            bridgeHandler.setJSuplaDiscoveryService(discovery);
-            return bridgeHandler;
+            return newJSuplaCloudBridgeHandler((Bridge) thing);
+        } else if (SUPLA_CLOUD_SERVER_TYPE.equals(thingTypeUID)) {
+            return newSuplaCloudServerThingHandler(thing);
+        } else if (SUPLA_CLOUD_DEVICE_TYPE.equals(thingTypeUID)) {
+            return newCloudDevice(thing);
         }
 
         return null;
     }
 
+    @NonNull
+    private ThingHandler newSuplaDeviceHandler(final Thing thing, final @Nullable SuplaDeviceRegistry suplaDeviceRegistryNonNull) {
+        final SuplaDeviceHandler suplaDeviceHandler = new SuplaDeviceHandler(thing);
+        if (suplaDeviceRegistryNonNull != null) {
+            suplaDeviceRegistryNonNull.addSuplaDevice(suplaDeviceHandler);
+        } else {
+            throw new IllegalStateException("suplaDeviceRegistry is null!");
+        }
+        return suplaDeviceHandler;
+    }
+
+    @NonNull
+    private ThingHandler newJSuplaCloudBridgeHandler(final Bridge thing) {
+        JSuplaCloudBridgeHandler bridgeHandler = new JSuplaCloudBridgeHandler(thing, suplaDeviceRegistry);
+        final JSuplaDiscoveryService discovery = new JSuplaDiscoveryService(bridgeHandler);
+        registerThingDiscovery(discovery);
+        bridgeHandler.setJSuplaDiscoveryService(discovery);
+        return bridgeHandler;
+    }
+
+    private ThingHandler newSuplaCloudServerThingHandler(final Thing thing) {
+        final CloudBridgeHandler bridgeHandler = new CloudBridgeHandler((Bridge) thing);
+        final CloudDiscovery cloudDiscovery = new CloudDiscovery(bridgeHandler);
+        registerThingDiscovery(cloudDiscovery);
+        return bridgeHandler;
+    }
+
+    @NonNull
+    private ThingHandler newCloudDevice(final Thing thing) {
+        return new CloudDevice(thing);
+    }
+
     @Reference
+    @SuppressWarnings("unused") // used by OSGi
     public void setSuplaDeviceRegistry(final SuplaDeviceRegistry suplaDeviceRegistry) {
         this.suplaDeviceRegistry = suplaDeviceRegistry;
     }
 
+    @SuppressWarnings("unused") // used by OSGi
     public void unsetSuplaDeviceRegistry(final SuplaDeviceRegistry suplaDeviceRegistry) {
         this.suplaDeviceRegistry = null;
     }
 
-    private synchronized JSuplaDiscoveryService registerThingDiscovery(JSuplaCloudBridgeHandler bridgeHandler) {
+    private synchronized void registerThingDiscovery(DiscoveryService discoveryService) {
         logger.trace("Try to register Discovery service on BundleID: {} Service: {}",
                 bundleContext.getBundle().getBundleId(), DiscoveryService.class.getName());
-
-        final JSuplaDiscoveryService discoveryService = new JSuplaDiscoveryService(bridgeHandler);
         bundleContext.registerService(DiscoveryService.class.getName(), discoveryService, new Hashtable<>());
-        return discoveryService;
     }
 }
