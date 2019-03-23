@@ -6,6 +6,7 @@ import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.eclipse.smarthome.core.types.RefreshType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.api.ApiClientFactory;
@@ -30,6 +31,9 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private ApiClient bridgeApiClient;
     private String oAuthToken;
+    private String address;
+    private String apiVersion;
+    private String cloudVersion;
 
     public CloudBridgeHandler(final Bridge bridge) {
         super(bridge);
@@ -42,8 +46,7 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
             internalInitialize();
         } catch (Exception ex) {
             logger.error("Cannot start server!", ex);
-            updateStatus(OFFLINE, CONFIGURATION_ERROR,
-                    "Cannot start server! " + ex.getLocalizedMessage());
+            updateStatus(OFFLINE, CONFIGURATION_ERROR, "Cannot start server! " + ex.getLocalizedMessage());
         }
     }
 
@@ -62,17 +65,19 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
                     "Cannot get server info from `" + bridgeApiClient.getBasePath() + "`!");
             return;
         }
-        updateState(ADDRESS_CHANNEL_ID, new StringType(serverInfo.getAddress()));
-        updateState(API_VERSION_CHANNEL_ID, new StringType(serverInfo.getApiVersion()));
-        updateState(CLOUD_VERSION_CHANNEL_ID, new StringType(serverInfo.getCloudVersion()));
+        address = serverInfo.getAddress();
+        apiVersion = serverInfo.getApiVersion();
+        cloudVersion = serverInfo.getCloudVersion();
+        updateState(ADDRESS_CHANNEL_ID, new StringType(address));
+        updateState(API_VERSION_CHANNEL_ID, new StringType(apiVersion));
+        updateState(CLOUD_VERSION_CHANNEL_ID, new StringType(cloudVersion));
 
         // check if current api is supported
         String apiVersion = ApiClient.API_VERSION;
         List<String> supportedApiVersions = serverInfo.getSupportedApiVersions();
         if (!supportedApiVersions.contains(apiVersion)) {
-            updateStatus(OFFLINE, CONFIGURATION_ERROR,
-                    "This API version `" + apiVersion + "` is not supported! Supported api versions: [" +
-                            String.join(", ", supportedApiVersions) + "].");
+            updateStatus(OFFLINE, CONFIGURATION_ERROR, "This API version `" + apiVersion
+                                                               + "` is not supported! Supported api versions: [" + String.join(", ", supportedApiVersions) + "].");
             return;
         }
 
@@ -83,6 +88,16 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
     @Override
     public void handleCommand(final ChannelUID channelUID, final Command command) {
         // TODO implement refreshing
+        final String channelId = channelUID.getId();
+        if (command instanceof RefreshType) {
+            if (ADDRESS_CHANNEL_ID.equals(channelId)) {
+                updateState(ADDRESS_CHANNEL_ID, new StringType(address));
+            } else if (API_VERSION_CHANNEL_ID.equals(channelId)) {
+                updateState(API_VERSION_CHANNEL_ID, new StringType(apiVersion));
+            } else if (CLOUD_VERSION_CHANNEL_ID.equals(channelId)) {
+                updateState(CLOUD_VERSION_CHANNEL_ID, new StringType(cloudVersion));
+            }
+        }
     }
 
     public Optional<ApiClient> getBridgeApiClient() {
