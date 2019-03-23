@@ -69,7 +69,7 @@
 	</channel-type>
 
 	<channel-type id="temperature-and-humidity-channel">
-		<item-type>Number</item-type>
+		<item-type>String</item-type>
 		<label>Temperature and Humidity</label>
 	</channel-type>
 
