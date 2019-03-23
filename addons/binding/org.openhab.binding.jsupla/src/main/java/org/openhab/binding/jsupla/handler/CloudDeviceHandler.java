@@ -87,9 +87,13 @@ public final class CloudDeviceHandler extends BaseThingHandler {
             return;
         }
         try {
-            final List<Channel> channels = ioDevicesApi.getIoDevice(cloudId, singletonList("channels")).getChannels()
-                                                   .stream().map(channel -> FACTORY.createChannel(channel, thing.getUID())).filter(Optional::isPresent)
-                                                   .map(Optional::get).collect(Collectors.toList());
+            final List<Channel> channels = ioDevicesApi.getIoDevice(cloudId, singletonList("channels"))
+                                                   .getChannels()
+                                                   .stream()
+                                                   .map(channel -> FACTORY.createChannel(channel, thing.getUID()))
+                                                   .filter(Optional::isPresent)
+                                                   .map(Optional::get)
+                                                   .collect(Collectors.toList());
             updateChannels(channels);
         } catch (ApiException e) {
             logger.error("Error when loading IO device from Supla Cloud!", e);
