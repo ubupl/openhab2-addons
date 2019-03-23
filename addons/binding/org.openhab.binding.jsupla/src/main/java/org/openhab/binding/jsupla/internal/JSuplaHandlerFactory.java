@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2018 by the respective copyright holders.
- *
+ * <p>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,6 +15,7 @@ import org.eclipse.smarthome.config.discovery.DiscoveryService;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
@@ -31,8 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Hashtable;
 
+import static java.util.Objects.requireNonNull;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.JSUPLA_SERVER_TYPE;
-import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_CLOUD_DEVICE_TYPE;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_CLOUD_SERVER_TYPE;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_TYPE;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
@@ -48,7 +49,7 @@ import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPPORTED_THING_
 public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(JSuplaHandlerFactory.class);
     private @Nullable SuplaDeviceRegistry suplaDeviceRegistry;
-    
+
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID);
@@ -61,13 +62,17 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
         // it's done cause tycho-compile raises possible null error
         final @Nullable SuplaDeviceRegistry suplaDeviceRegistryNonNull = suplaDeviceRegistry;
         if (SUPLA_DEVICE_TYPE.equals(thingTypeUID)) {
-            return newSuplaDeviceHandler(thing, suplaDeviceRegistryNonNull);
+            final ThingUID bridgeUID = requireNonNull(thing.getBridgeUID(), "No bridge for " + thing);
+            final ThingTypeUID bridgeTypeUID = bridgeUID.getThingTypeUID();
+            if (JSUPLA_SERVER_TYPE.equals(bridgeTypeUID)) {
+                return newSuplaDeviceHandler(thing, suplaDeviceRegistryNonNull);
+            } else if (SUPLA_CLOUD_SERVER_TYPE.equals(bridgeTypeUID)) {
+                return newCloudDevice(thing);
+            }
         } else if (JSUPLA_SERVER_TYPE.equals(thingTypeUID)) {
             return newJSuplaCloudBridgeHandler((Bridge) thing);
         } else if (SUPLA_CLOUD_SERVER_TYPE.equals(thingTypeUID)) {
             return newSuplaCloudServerThingHandler(thing);
-        } else if (SUPLA_CLOUD_DEVICE_TYPE.equals(thingTypeUID)) {
-            return newCloudDevice(thing);
         }
 
         return null;

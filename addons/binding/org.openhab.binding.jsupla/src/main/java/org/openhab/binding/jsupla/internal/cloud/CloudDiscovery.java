@@ -20,8 +20,9 @@ import java.util.Optional;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_CLOUD_DEVICE_TYPE;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_CLOUD_ID;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_GUID;
+import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_TYPE;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPPORTED_THING_TYPES_UIDS;
 
 /**
@@ -56,7 +57,7 @@ public final class CloudDiscovery extends AbstractDiscoveryService {
     }
 
     private void addThing(Device device) {
-        final ThingUID thingUID = new ThingUID(SUPLA_CLOUD_DEVICE_TYPE, findBridgeUID(), device.getGUIDString());
+        final ThingUID thingUID = new ThingUID(SUPLA_DEVICE_TYPE, findBridgeUID(), device.getGUIDString());
         final DiscoveryResult discoveryResult = createDiscoveryResult(thingUID, buildThingLabel(device), buildThingProperties(device));
         thingDiscovered(discoveryResult);
     }
@@ -98,6 +99,7 @@ public final class CloudDiscovery extends AbstractDiscoveryService {
     private Map<String, Object> buildThingProperties(Device device) {
         return ImmutableMap.<String, Object>builder()
                        .put(SUPLA_DEVICE_GUID, device.getGUIDString())
+                       .put(SUPLA_DEVICE_CLOUD_ID, device.getId())
                        .build();
     }
 }

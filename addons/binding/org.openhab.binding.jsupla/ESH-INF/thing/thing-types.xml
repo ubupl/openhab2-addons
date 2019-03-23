@@ -18,21 +18,9 @@
 				<description>This is GUID of device. It can be found on website during device configuration.
 				</description>
 			</parameter>
-		</config-description>
-	</thing-type>
-
-	<thing-type id="cloud-device">
-		<supported-bridge-type-refs>
-			<bridge-type-ref id="supla-cloud-bridge"/>
-		</supported-bridge-type-refs>
-		<label>Supla Device</label>
-		<description>Generic type for all Supla devices. Channels will be provided by device at runtime</description>
-		<!-- Note: Channels will be discovered at runtime -->
-		<config-description>
-			<parameter name="jsupla-device-guid" type="text" required="true">
-				<label>GUID</label>
-				<description>This is GUID of device. It can be found on website during device configuration.
-				</description>
+			<parameter name="cloud-id" type="text" required="false">
+				<label>Cloud ID</label>
+				<description>ID of device in Supla Cloud.</description>
 			</parameter>
 		</config-description>
 	</thing-type>
