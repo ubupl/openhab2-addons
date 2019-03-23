@@ -2,7 +2,9 @@ package org.openhab.binding.jsupla.handler;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.StringType;
+import org.eclipse.smarthome.core.library.types.UpDownType;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -13,13 +15,15 @@ import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
+import org.openhab.binding.jsupla.internal.cloud.ApiClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.grzeslowski.jsupla.api.ApiClientFactory;
 import pl.grzeslowski.jsupla.api.generated.ApiClient;
 import pl.grzeslowski.jsupla.api.generated.ApiException;
 import pl.grzeslowski.jsupla.api.generated.api.ChannelsApi;
 import pl.grzeslowski.jsupla.api.generated.api.IoDevicesApi;
+import pl.grzeslowski.jsupla.api.generated.model.ChannelExecuteActionRequest;
+import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionEnumNames;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelState;
 
@@ -34,6 +38,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static org.eclipse.smarthome.core.library.types.OnOffType.OFF;
 import static org.eclipse.smarthome.core.library.types.OnOffType.ON;
+import static org.eclipse.smarthome.core.library.types.UpDownType.UP;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.BRIDGE_UNINITIALIZED;
@@ -41,6 +46,10 @@ import static org.eclipse.smarthome.core.thing.ThingStatusDetail.COMMUNICATION_E
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_CLOUD_ID;
 import static org.openhab.binding.jsupla.internal.cloud.CloudChannelFactory.FACTORY;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.CLOSE;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.OPEN;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.TURN_OFF;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.TURN_ON;
 
 /**
  * This is handler for all Supla devices.
@@ -88,7 +97,7 @@ public final class CloudDeviceHandler extends BaseThingHandler {
     }
 
     private void initChannels(final String token) {
-        apiClient = ApiClientFactory.INSTANCE.newApiClient(token);
+        apiClient = ApiClientFactory.FACTORY.newApiClient(token, logger);
         final IoDevicesApi ioDevicesApi = new IoDevicesApi(apiClient);
         final String cloudIdString = valueOf(getConfig().get(SUPLA_DEVICE_CLOUD_ID));
         final int cloudId;
@@ -122,21 +131,40 @@ public final class CloudDeviceHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(final ChannelUID channelUID, final Command command) {
-        logger.debug("Handling command {} in channel {} thing", command, channelUID, thing.getUID());
+        logger.trace("Handling command `{}` in channel `{}` thing", command, channelUID, thing.getUID());
+        try {
+            handleCommandEx(channelUID, command);
+        } catch (ApiException e) {
+            logger.error("Error occurred when handling command `{}` on `{}`", command, channelUID, e);
+        }
+    }
+
+    private void handleCommandEx(final ChannelUID channelUID, final Command command) throws ApiException {
         final int channelId = parseInt(channelUID.getId());
         if (command instanceof RefreshType) {
-            logger.trace("Refreshing channel {}", channelUID);
+            logger.trace("Refreshing channel `{}`", channelUID);
             final ChannelsApi channelsApi = new ChannelsApi(apiClient);
-            try {
-                final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
-                        channelsApi.getChannel(channelId, asList("supportedFunctions", "channelState"));
-                final ChannelState channelState = channel.getState();
-                final ChannelFunctionEnumNames name = channel.getFunction().getName();
-                findState(channelState, name).ifPresent(state -> updateState(channelUID, state));
-            } catch (ApiException e) {
-                logger.error("Error occurred when getting status of channel {}", channelUID, e);
-            }
+            final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
+                    channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
+            final ChannelState channelState = channel.getState();
+            final ChannelFunctionEnumNames name = channel.getFunction().getName();
+            findState(channelState, name).ifPresent(state -> updateState(channelUID, state));
+        } else if (command instanceof OnOffType) {
+            OnOffType onOff = (OnOffType) command;
+            handleOneZeroCommand(channelId, onOff == ON, TURN_ON, TURN_OFF);
+        } else if (command instanceof UpDownType) {
+            UpDownType upDownType = (UpDownType) command;
+            handleOneZeroCommand(channelId, upDownType == UP, OPEN, CLOSE);
         }
+    }
+
+    private void handleOneZeroCommand(final int channelId,
+                                      final boolean firstOrSecond,
+                                      final ChannelFunctionActionEnum first,
+                                      final ChannelFunctionActionEnum second) throws ApiException {
+        final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
+        final ChannelsApi channelsApi = new ChannelsApi(apiClient);
+        channelsApi.executeAction(channelId, new ChannelExecuteActionRequest().action(action));
     }
 
     private Optional<State> findState(ChannelState state, ChannelFunctionEnumNames name) {
@@ -152,12 +180,13 @@ public final class CloudDeviceHandler extends BaseThingHandler {
             case OPENINGSENSOR_DOOR:
             case CONTROLLINGTHEROLLERSHUTTER:
             case OPENINGSENSOR_ROLLERSHUTTER:
-            case POWERSWITCH:
-            case LIGHTSWITCH:
             case OPENINGSENSOR_WINDOW:
             case MAILSENSOR:
             case STAIRCASETIMER:
                 return of(state.getHi()).map(hi -> hi ? ON : OFF);
+            case POWERSWITCH:
+            case LIGHTSWITCH:
+                return of(state.getOn()).map(on -> on ? ON : OFF);
             case THERMOMETER:
                 return of(new DecimalType(state.getTemperature()));
             case HUMIDITY:

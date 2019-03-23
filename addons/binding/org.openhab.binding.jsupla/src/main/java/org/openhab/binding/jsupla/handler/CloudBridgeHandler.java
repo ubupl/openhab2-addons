@@ -9,7 +9,6 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.grzeslowski.jsupla.api.ApiClientFactory;
 import pl.grzeslowski.jsupla.api.generated.ApiClient;
 import pl.grzeslowski.jsupla.api.generated.ApiException;
 import pl.grzeslowski.jsupla.api.generated.api.ServerApi;
@@ -26,7 +25,9 @@ import static org.openhab.binding.jsupla.JSuplaBindingConstants.ADDRESS_CHANNEL_
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.API_VERSION_CHANNEL_ID;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.CLOUD_VERSION_CHANNEL_ID;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.O_AUTH_TOKEN;
+import static org.openhab.binding.jsupla.internal.cloud.ApiClientFactory.FACTORY;
 
+@SuppressWarnings("PackageAccessibility")
 public class CloudBridgeHandler extends BaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private ApiClient bridgeApiClient;
@@ -54,8 +55,7 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
         // init bridge api client
         final Configuration config = this.getConfig();
         this.oAuthToken = (String) config.get(O_AUTH_TOKEN);
-        this.bridgeApiClient = ApiClientFactory.INSTANCE.newApiClient(oAuthToken);
-        bridgeApiClient.setDebugging(logger.isDebugEnabled());
+        this.bridgeApiClient = FACTORY.newApiClient(oAuthToken, logger);
 
         // get server info
         ServerApi serverApi = new ServerApi(bridgeApiClient);
