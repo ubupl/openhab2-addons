@@ -12,12 +12,19 @@
 			Please double check that you enabled REST API in your server config.
 		</description>
 
+		<channels>
+			<!--<channel id="refresh" typeId="refresh"/>-->
+			<channel id="address" typeId="address"/>
+			<channel id="api-version" typeId="api-version"/>
+			<channel id="cloud-version" typeId="cloud-version"/>
+		</channels>
+
 		<config-description>
 			<parameter name="oAuthToken" type="text" required="true">
 				<label>OAuth Token</label>
 				<description>
 					<![CDATA[
-						OAuth token generated from <a href="https://cloud.supla.org/integrations/tokens"> Supla Cloud</a>.
+						OAuth token generated from <a href="https://cloud.supla.org/integrations/tokens">Supla Cloud</a>.
 					]]></description>
 				<context>password</context>
 			</parameter>
