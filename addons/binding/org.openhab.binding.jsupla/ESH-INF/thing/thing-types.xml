@@ -8,6 +8,7 @@
 	<thing-type id="device">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="server-bridge"/>
+			<bridge-type-ref id="supla-cloud-bridge"/>
 		</supported-bridge-type-refs>
 		<label>Supla Device</label>
 		<description>Generic type for all Supla devices. Channels will be provided by device at runtime</description>
