@@ -20,7 +20,7 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
 import org.openhab.binding.jsupla.handler.CloudBridgeHandler;
-import org.openhab.binding.jsupla.handler.CloudDevice;
+import org.openhab.binding.jsupla.handler.CloudDeviceHandler;
 import org.openhab.binding.jsupla.handler.JSuplaCloudBridgeHandler;
 import org.openhab.binding.jsupla.handler.SuplaDeviceHandler;
 import org.openhab.binding.jsupla.internal.cloud.CloudDiscovery;
@@ -107,7 +107,7 @@ public class JSuplaHandlerFactory extends BaseThingHandlerFactory {
 
     @NonNull
     private ThingHandler newCloudDevice(final Thing thing) {
-        return new CloudDevice(thing);
+        return new CloudDeviceHandler(thing);
     }
 
     @Reference

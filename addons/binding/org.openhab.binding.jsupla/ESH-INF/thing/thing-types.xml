@@ -18,7 +18,7 @@
 				<description>This is GUID of device. It can be found on website during device configuration.
 				</description>
 			</parameter>
-			<parameter name="cloud-id" type="text" required="false">
+			<parameter name="cloud-id" type="integer" required="false" min="1">
 				<label>Cloud ID</label>
 				<description>ID of device in Supla Cloud.</description>
 			</parameter>
