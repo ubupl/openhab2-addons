@@ -68,22 +68,22 @@ public final class CloudChannelFactory {
         if (RELAY_TYPES.contains(name)) {
             final ChannelFunction function = channel.getFunction();
             if (function != null && LIGHTSWITCH.equals(function.getName())) {
-                return Optional.of(createChannel(channel, thingUID, LIGHT_CHANNEL_ID));
+                return Optional.of(createChannel(channel, thingUID, LIGHT_CHANNEL_ID, "Switch"));
             } else {
-                return Optional.of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID));
+                return Optional.of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
             }
         }
         if (TEMPERATURE_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, TEMPERATURE_CHANNEL_ID));
+            return Optional.of(createChannel(channel, thingUID, TEMPERATURE_CHANNEL_ID, null));
         }
         if (TEMPERATURE_AND_HUMIDITY_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, TEMPERATURE_AND_HUMIDITY_CHANNEL_ID));
+            return Optional.of(createChannel(channel, thingUID, TEMPERATURE_AND_HUMIDITY_CHANNEL_ID, null));
         }
         if (DECIMAL_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, DECIMAL_CHANNEL_ID));
+            return Optional.of(createChannel(channel, thingUID, DECIMAL_CHANNEL_ID, null));
         }
         if (COLOR_CHANNEL_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, RGB_CHANNEL_ID));
+            return Optional.of(createChannel(channel, thingUID, RGB_CHANNEL_ID, null));
         }
         logger.warn("Channel of type {} is not supported!", type);
         return empty();
@@ -91,11 +91,11 @@ public final class CloudChannelFactory {
 
     private Channel createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel,
                                   ThingUID thingUID,
-                                  String id) {
+                                  String id, final String acceptedItemType) {
         final ChannelUID channelUid = new ChannelUID(thingUID, valueOf(channel.getId()));
         final ChannelTypeUID channelTypeUID = new ChannelTypeUID(JSuplaBindingConstants.BINDING_ID, id);
 
-        return ChannelBuilder.create(channelUid, null) // TODO should it be null?
+        return ChannelBuilder.create(channelUid, acceptedItemType) // TODO should it be null?
                        .withType(channelTypeUID)
                        .build();
     }
