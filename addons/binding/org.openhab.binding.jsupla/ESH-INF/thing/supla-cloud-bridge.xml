@@ -36,4 +36,26 @@
 		</config-description>
 
 	</bridge-type>
+
+
+	<channel-type id="refresh">
+		<item-type>Switch</item-type>
+		<label>Refresh all devices</label>
+		<description>Manually refresh status of all devices</description>
+	</channel-type>
+	<channel-type id="address">
+		<item-type>String</item-type>
+		<label>Supla Cloud Address</label>
+		<state readOnly="true"/>
+	</channel-type>
+	<channel-type id="api-version">
+		<item-type>String</item-type>
+		<label>API Version</label>
+		<state readOnly="true"/>
+	</channel-type>
+	<channel-type id="cloud-version">
+		<item-type>String</item-type>
+		<label>Cloud Version</label>
+		<state readOnly="true"/>
+	</channel-type>
 </thing:thing-descriptions>

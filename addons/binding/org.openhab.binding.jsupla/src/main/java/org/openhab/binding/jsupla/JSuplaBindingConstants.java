@@ -41,6 +41,8 @@ public class JSuplaBindingConstants {
 
     // supla device and cloud-device
     public static final String SUPLA_DEVICE_GUID = "jsupla-device-guid";
+    public static final String SUPLA_DEVICE_CLOUD_ID = "cloud-id";
+    public static final String THREAD_POOL_NAME = "supla-cloud-thread-pool";
 
     // jSuplaServer constants
     public static final int DEVICE_TIMEOUT_SEC = 10;
@@ -51,6 +53,14 @@ public class JSuplaBindingConstants {
     public static final String CONFIG_AUTH_KEY = "authKey";
     public static final String CONFIG_PORT = "port";
     public static final String CONNECTED_DEVICES_CHANNEL_ID = "server-devices";
+
+    // CloudBridgeHandler
+    public static final String O_AUTH_TOKEN = "oAuthToken";
+    public static final String REFRESH_INTERVAL = "refreshInterval";
+    public static final String ADDRESS_CHANNEL_ID = "address";
+    public static final String API_VERSION_CHANNEL_ID = "api-version";
+    public static final String CLOUD_VERSION_CHANNEL_ID = "cloud-version";
+    public static final String REFRESH_CHANNEL_ID = "refresh";
 
     public static class Channels {
         public static final String LIGHT_CHANNEL_ID = "light-channel";
