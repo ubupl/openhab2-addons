@@ -97,7 +97,7 @@ public final class CloudDeviceHandler extends BaseThingHandler {
             updateChannels(channels);
         } catch (ApiException e) {
             logger.error("Error when loading IO device from Supla Cloud!", e);
-            updateStatus(OFFLINE, COMMUNICATION_ERROR, "There is no OAuth token in bridge!");
+            updateStatus(OFFLINE, COMMUNICATION_ERROR, "Error when loading IO device from Supla Cloud!");
         }
     }
 
