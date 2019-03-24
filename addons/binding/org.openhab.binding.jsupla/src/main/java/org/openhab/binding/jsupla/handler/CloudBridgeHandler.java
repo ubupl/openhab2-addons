@@ -18,6 +18,7 @@ import pl.grzeslowski.jsupla.api.generated.ApiException;
 import pl.grzeslowski.jsupla.api.generated.api.ServerApi;
 import pl.grzeslowski.jsupla.api.generated.model.ServerInfo;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -92,7 +93,7 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
         }
 
         final ScheduledExecutorService scheduledPool = ThreadPoolManager.getScheduledPool("cloud-bridge-refresh-children");
-        final Integer refreshInterval = (Integer) config.get("refreshInterval");
+        final int refreshInterval = ((BigDecimal) config.get("refreshInterval")).intValue();
         this.scheduledFuture = scheduledPool.scheduleAtFixedRate(
                 this::refreshCloudDevices,
                 refreshInterval * 2,
