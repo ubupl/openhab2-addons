@@ -1,5 +1,6 @@
 package org.openhab.binding.jsupla.handler;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
@@ -63,17 +64,17 @@ abstract class AbstractDeviceHandler extends BaseThingHandler {
         }
     }
 
-    protected abstract void handleRefreshCommand(final ChannelUID channelUID) throws Exception;
+    protected abstract void handleRefreshCommand(@NonNull final ChannelUID channelUID) throws Exception;
 
-    protected abstract void handleOnOffCommand(final ChannelUID channelUID, final OnOffType command) throws Exception;
+    protected abstract void handleOnOffCommand(@NonNull final ChannelUID channelUID, @NonNull final OnOffType command) throws Exception;
 
-    protected abstract void handleUpDownCommand(final ChannelUID channelUID, final UpDownType command) throws Exception;
+    protected abstract void handleUpDownCommand(@NonNull final ChannelUID channelUID, @NonNull final UpDownType command) throws Exception;
 
-    protected abstract void handleHsbCommand(final ChannelUID channelUID, final HSBType command) throws Exception;
+    protected abstract void handleHsbCommand(@NonNull final ChannelUID channelUID, @NonNull final HSBType command) throws Exception;
 
-    protected abstract void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) throws Exception;
+    protected abstract void handleOpenClosedCommand(@NonNull final ChannelUID channelUID, @NonNull final OpenClosedType command) throws Exception;
 
-    protected abstract void handlePercentCommand(final ChannelUID channelUID, final PercentType command) throws Exception;
+    protected abstract void handlePercentCommand(@NonNull final ChannelUID channelUID, @NonNull final PercentType command) throws Exception;
 
-    protected abstract void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) throws Exception;
+    protected abstract void handleDecimalCommand(@NonNull final ChannelUID channelUID, @NonNull final DecimalType command) throws Exception;
 }
