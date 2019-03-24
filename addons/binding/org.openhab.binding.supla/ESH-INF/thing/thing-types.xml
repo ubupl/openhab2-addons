@@ -15,7 +15,7 @@
 		<!-- Note: Channels will be discovered at runtime -->
 		<representation-property>Supla-device-guid</representation-property>
 		<config-description>
-			<parameter name="Supla-device-guid" type="text" required="true">
+			<parameter name="supla-device-guid" type="text" required="true">
 				<label>GUID</label>
 				<description>This is GUID of device. It can be found on website during device configuration.
 				</description>
