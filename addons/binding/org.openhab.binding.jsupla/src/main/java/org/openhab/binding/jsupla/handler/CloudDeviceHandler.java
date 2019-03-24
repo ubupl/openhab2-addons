@@ -59,7 +59,7 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnu
  * @author Martin Grześlowski - initial contributor
  */
 @SuppressWarnings("PackageAccessibility")
-public final class CloudDeviceHandler extends AbstarctDeviceHandler {
+public final class CloudDeviceHandler extends AbstractDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private ApiClient apiClient;
     private ChannelsApi channelsApi;

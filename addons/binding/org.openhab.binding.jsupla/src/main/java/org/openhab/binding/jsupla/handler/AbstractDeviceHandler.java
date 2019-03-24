@@ -17,10 +17,10 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
 
-abstract class AbstarctDeviceHandler extends BaseThingHandler {
-    private final Logger logger = LoggerFactory.getLogger(AbstarctDeviceHandler.class);
+abstract class AbstractDeviceHandler extends BaseThingHandler {
+    private final Logger logger = LoggerFactory.getLogger(AbstractDeviceHandler.class);
 
-    public AbstarctDeviceHandler(final Thing thing) {
+    public AbstractDeviceHandler(final Thing thing) {
         super(thing);
     }
 

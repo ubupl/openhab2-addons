@@ -59,7 +59,7 @@ import static reactor.core.publisher.Flux.just;
  * @author Grzeslowski - Initial contribution
  */
 @NonNullByDefault
-public class SuplaDeviceHandler extends AbstarctDeviceHandler {
+public class SuplaDeviceHandler extends AbstractDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(SuplaDeviceHandler.class);
 
     private pl.grzeslowski.jsupla.server.api.@Nullable Channel suplaChannel;
