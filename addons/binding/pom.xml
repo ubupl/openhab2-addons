@@ -65,7 +65,7 @@
     <module>org.openhab.binding.innogysmarthome</module>
     <module>org.openhab.binding.ipp</module>
     <module>org.openhab.binding.jeelink</module>
-    <module>org.openhab.binding.jsupla</module>
+    <module>org.openhab.binding.supla</module>
     <module>org.openhab.binding.keba</module>
     <module>org.openhab.binding.km200</module>
     <module>org.openhab.binding.knx</module>
