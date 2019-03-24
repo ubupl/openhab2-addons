@@ -2,18 +2,18 @@ package org.openhab.binding.jsupla.handler;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DecimalType;
+import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.OpenClosedType;
+import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.library.types.UpDownType;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.BridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
-import org.eclipse.smarthome.core.types.Command;
-import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.jsupla.internal.cloud.ApiClientFactory;
 import org.slf4j.Logger;
@@ -59,17 +59,18 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnu
  * @author Martin Grześlowski - initial contributor
  */
 @SuppressWarnings("PackageAccessibility")
-public final class CloudDeviceHandler extends BaseThingHandler {
+public final class CloudDeviceHandler extends AbstarctDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private CloudBridgeHandler cloudBridgeHandler;
     private ApiClient apiClient;
+    private ChannelsApi channelsApi;
 
     public CloudDeviceHandler(final Thing thing) {
         super(thing);
     }
 
     @Override
-    public void initialize() {
+    protected void internalInitialize() throws Exception {
         @Nullable final Bridge bridge = getBridge();
         if (bridge == null) {
             logger.debug("No bridge for thing with UID {}", thing.getUID());
@@ -98,6 +99,7 @@ public final class CloudDeviceHandler extends BaseThingHandler {
 
     private void initChannels(final String token) {
         apiClient = ApiClientFactory.FACTORY.newApiClient(token, logger);
+        channelsApi = new ChannelsApi(apiClient);
         final IoDevicesApi ioDevicesApi = new IoDevicesApi(apiClient);
         final String cloudIdString = valueOf(getConfig().get(SUPLA_DEVICE_CLOUD_ID));
         final int cloudId;
@@ -130,32 +132,47 @@ public final class CloudDeviceHandler extends BaseThingHandler {
     }
 
     @Override
-    public void handleCommand(final ChannelUID channelUID, final Command command) {
-        logger.trace("Handling command `{}` in channel `{}` thing", command, channelUID, thing.getUID());
-        try {
-            handleCommandEx(channelUID, command);
-        } catch (ApiException e) {
-            logger.error("Error occurred when handling command `{}` on `{}`", command, channelUID, e);
-        }
+    protected void handleRefreshCommand(final ChannelUID channelUID) throws Exception {
+        final int channelId = parseInt(channelUID.getId());
+        logger.trace("Refreshing channel `{}`", channelUID);
+        final ChannelsApi channelsApi = new ChannelsApi(apiClient);
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
+                channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
+        final ChannelState channelState = channel.getState();
+        final ChannelFunctionEnumNames name = channel.getFunction().getName();
+        findState(channelState, name).ifPresent(state -> updateState(channelUID, state));
     }
 
-    private void handleCommandEx(final ChannelUID channelUID, final Command command) throws ApiException {
+    @Override
+    protected void handleOnOffCommand(final ChannelUID channelUID, final OnOffType command) throws Exception {
         final int channelId = parseInt(channelUID.getId());
-        if (command instanceof RefreshType) {
-            logger.trace("Refreshing channel `{}`", channelUID);
-            final ChannelsApi channelsApi = new ChannelsApi(apiClient);
-            final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
-                    channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
-            final ChannelState channelState = channel.getState();
-            final ChannelFunctionEnumNames name = channel.getFunction().getName();
-            findState(channelState, name).ifPresent(state -> updateState(channelUID, state));
-        } else if (command instanceof OnOffType) {
-            OnOffType onOff = (OnOffType) command;
-            handleOneZeroCommand(channelId, onOff == ON, TURN_ON, TURN_OFF);
-        } else if (command instanceof UpDownType) {
-            UpDownType upDownType = (UpDownType) command;
-            handleOneZeroCommand(channelId, upDownType == UP, OPEN, CLOSE);
-        }
+        handleOneZeroCommand(channelId, command == ON, TURN_ON, TURN_OFF);
+    }
+
+    @Override
+    protected void handleUpDownCommand(final ChannelUID channelUID, final UpDownType command) throws Exception {
+        final int channelId = parseInt(channelUID.getId());
+        handleOneZeroCommand(channelId, command == UP, OPEN, CLOSE);
+    }
+
+    @Override
+    protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) throws Exception {
+// TODO handle this command
+    }
+
+    @Override
+    protected void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) throws Exception {
+// TODO handle this command
+    }
+
+    @Override
+    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) throws Exception {
+// TODO handle this command
+    }
+
+    @Override
+    protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) throws Exception {
+// TODO handle this command
     }
 
     private void handleOneZeroCommand(final int channelId,
@@ -163,7 +180,6 @@ public final class CloudDeviceHandler extends BaseThingHandler {
                                       final ChannelFunctionActionEnum first,
                                       final ChannelFunctionActionEnum second) throws ApiException {
         final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
-        final ChannelsApi channelsApi = new ChannelsApi(apiClient);
         channelsApi.executeAction(channelId, new ChannelExecuteActionRequest().action(action));
     }
 

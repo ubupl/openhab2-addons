@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2010-2018 by the respective copyright holders.
- *
+ * <p>
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -15,12 +15,12 @@ import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.OpenClosedType;
 import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.library.types.UpDownType;
 import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.State;
@@ -59,7 +59,7 @@ import static reactor.core.publisher.Flux.just;
  * @author Grzeslowski - Initial contribution
  */
 @NonNullByDefault
-public class SuplaDeviceHandler extends BaseThingHandler {
+public class SuplaDeviceHandler extends AbstarctDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(SuplaDeviceHandler.class);
 
     private pl.grzeslowski.jsupla.server.api.@Nullable Channel suplaChannel;
@@ -71,17 +71,10 @@ public class SuplaDeviceHandler extends BaseThingHandler {
         super(thing);
     }
 
-    @SuppressWarnings({"unused", "null"})
-    @Override
-    public void handleCommand(ChannelUID channelUID, Command command) {
+    private void sendCommandToSuplaServer(ChannelUID channelUID, ChannelValue channelValue, Command command) {
         final Integer channelNumber = channelUIDS.get(channelUID);
         if (channelNumber == null) {
             logger.debug("There is no channel number for channelUID={}", channelUID);
-            return;
-        }
-        final ChannelValue channelValue = buildChannelValue(command);
-        if (channelValue == null) {
-            logger.debug("Don't know how to handle command {} sent to {}", command, channelUID);
             return;
         }
         final ChannelNewValue channelNewValue = new ChannelNewValue(
@@ -99,44 +92,61 @@ public class SuplaDeviceHandler extends BaseThingHandler {
                 );
     }
 
-    private @Nullable ChannelValue buildChannelValue(final Command command) {
-        if (command instanceof OnOffType) {
-            final OnOffType onOff = (OnOffType) command;
-            if (onOff == OnOffType.ON) {
-                return OnOff.ON;
-            } else {
-                return OnOff.OFF;
-            }
-        } else if (command instanceof HSBType) {
-            final HSBType hsb = (HSBType) command;
-            return new RgbValue(
-                    hsb.getBrightness().intValue(),
-                    255, // TODO I don't know if this is correct
-                    hsb.getRed().intValue(),
-                    hsb.getGreen().intValue(),
-                    hsb.getBlue().intValue());
-        } else if (command instanceof OpenClosedType) {
-            final OpenClosedType onOff = (OpenClosedType) command;
-            if (onOff == OpenClosedType.OPEN) {
-                return OnOff.ON;
-            } else {
-                return OnOff.OFF;
-            }
-        } else if (command instanceof PercentType) {
-            final PercentType percent = (PercentType) command;
-            return new PercentValue(percent.intValue());
-        } else if (command instanceof DecimalType) {
-            final DecimalType decimal = (DecimalType) command;
-            return new DecimalValue(decimal.toBigDecimal());
-        }
-
-        logger.debug("Don't know how to handle this command {}!", command);
-        return null;
+    @Override
+    protected void handleRefreshCommand(final ChannelUID channelUID) {
+// TODO handle this command
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public void initialize() {
+    protected void handleOnOffCommand(final ChannelUID channelUID, final OnOffType command) {
+        final OnOff toSend;
+        if (command == OnOffType.ON) {
+            toSend = OnOff.ON;
+        } else {
+            toSend = OnOff.OFF;
+        }
+        sendCommandToSuplaServer(channelUID, toSend, command);
+    }
+
+    @Override
+    protected void handleUpDownCommand(final ChannelUID channelUID, final UpDownType command) {
+// TODO handle this command
+    }
+
+    @Override
+    protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) {
+        final RgbValue toSend = new RgbValue(
+                command.getBrightness().intValue(),
+                255, // TODO I don't know if this is correct
+                command.getRed().intValue(),
+                command.getGreen().intValue(),
+                command.getBlue().intValue());
+        sendCommandToSuplaServer(channelUID, toSend, command);
+    }
+
+    @Override
+    protected void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) {
+        final OnOff toSend;
+        if (command == OpenClosedType.OPEN) {
+            toSend = OnOff.ON;
+        } else {
+            toSend = OnOff.OFF;
+        }
+        sendCommandToSuplaServer(channelUID, toSend, command);
+    }
+
+    @Override
+    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) {
+        sendCommandToSuplaServer(channelUID, new PercentValue(command.intValue()), command);
+    }
+
+    @Override
+    protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) {
+        sendCommandToSuplaServer(channelUID, new DecimalValue(command.toBigDecimal()), command);
+    }
+
+    @Override
+    protected void internalInitialize() {
         if (getBridge() == null) {
             logger.debug("No bridge for thing with UID {}", thing.getUID());
             updateStatus(
