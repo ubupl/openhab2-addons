@@ -18,6 +18,7 @@
 			<channel id="cloud-version" typeId="cloud-version"/>
 		</channels>
 
+		<representation-property>oAuthToken</representation-property>
 		<config-description>
 			<parameter name="oAuthToken" type="text" required="true">
 				<label>OAuth Token</label>
