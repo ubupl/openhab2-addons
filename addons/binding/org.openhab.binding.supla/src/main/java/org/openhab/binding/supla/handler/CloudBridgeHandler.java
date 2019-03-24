@@ -35,6 +35,7 @@ import static org.openhab.binding.supla.SuplaBindingConstants.ADDRESS_CHANNEL_ID
 import static org.openhab.binding.supla.SuplaBindingConstants.API_VERSION_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.CLOUD_VERSION_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.O_AUTH_TOKEN;
+import static org.openhab.binding.supla.SuplaBindingConstants.THREAD_POOL_NAME;
 import static org.openhab.binding.supla.internal.cloud.ApiClientFactory.FACTORY;
 
 public class CloudBridgeHandler extends BaseBridgeHandler {
@@ -91,7 +92,7 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
             return;
         }
 
-        final ScheduledExecutorService scheduledPool = ThreadPoolManager.getScheduledPool("cloud-bridge-refresh-children");
+        final ScheduledExecutorService scheduledPool = ThreadPoolManager.getScheduledPool(THREAD_POOL_NAME);
         final int refreshInterval = ((BigDecimal) config.get("refreshInterval")).intValue();
         this.scheduledFuture = scheduledPool.scheduleAtFixedRate(
                 this::refreshCloudDevices,
