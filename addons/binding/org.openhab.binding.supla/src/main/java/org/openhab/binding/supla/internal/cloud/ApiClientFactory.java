@@ -1,7 +1,6 @@
 package org.openhab.binding.supla.internal.cloud;
 
 import org.slf4j.Logger;
-import pl.grzeslowski.jsupla.api.OneLineHttpLoggingInterceptor;
 import pl.grzeslowski.jsupla.api.generated.ApiClient;
 
 import static com.squareup.okhttp.logging.HttpLoggingInterceptor.Level.BODY;
