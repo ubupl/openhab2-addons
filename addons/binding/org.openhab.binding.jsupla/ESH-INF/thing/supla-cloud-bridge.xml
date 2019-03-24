@@ -13,7 +13,6 @@
 		</description>
 
 		<channels>
-			<!--<channel id="refresh" typeId="refresh"/>-->
 			<channel id="address" typeId="address"/>
 			<channel id="api-version" typeId="api-version"/>
 			<channel id="cloud-version" typeId="cloud-version"/>
@@ -37,12 +36,6 @@
 
 	</bridge-type>
 
-
-	<channel-type id="refresh">
-		<item-type>Switch</item-type>
-		<label>Refresh all devices</label>
-		<description>Manually refresh status of all devices</description>
-	</channel-type>
 	<channel-type id="address">
 		<item-type>String</item-type>
 		<label>Supla Cloud Address</label>

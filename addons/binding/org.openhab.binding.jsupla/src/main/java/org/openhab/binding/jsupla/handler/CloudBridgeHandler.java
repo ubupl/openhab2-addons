@@ -115,7 +115,6 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void handleCommand(final ChannelUID channelUID, final Command command) {
-        // TODO implement refreshing
         final String channelId = channelUID.getId();
         if (command instanceof RefreshType) {
             if (ADDRESS_CHANNEL_ID.equals(channelId)) {
