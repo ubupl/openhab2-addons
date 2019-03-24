@@ -135,12 +135,14 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     protected void handleRefreshCommand(final ChannelUID channelUID) throws Exception {
         final int channelId = parseInt(channelUID.getId());
         logger.trace("Refreshing channel `{}`", channelUID);
-        final ChannelsApi channelsApi = new ChannelsApi(apiClient);
         final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
                 channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
         final ChannelState channelState = channel.getState();
         final ChannelFunctionEnumNames name = channel.getFunction().getName();
-        findState(channelState, name).ifPresent(state -> updateState(channelUID, state));
+        findState(channelState, name).ifPresent(state -> {
+            logger.trace("Updating state `{}` to `{}`", channelUID, state);
+            updateState(channelUID, state);
+        });
     }
 
     @Override
