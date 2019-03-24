@@ -13,6 +13,7 @@
 		<label>Supla Device</label>
 		<description>Generic type for all Supla devices. Channels will be provided by device at runtime</description>
 		<!-- Note: Channels will be discovered at runtime -->
+		<representation-property>jsupla-device-guid</representation-property>
 		<config-description>
 			<parameter name="jsupla-device-guid" type="text" required="true">
 				<label>GUID</label>
