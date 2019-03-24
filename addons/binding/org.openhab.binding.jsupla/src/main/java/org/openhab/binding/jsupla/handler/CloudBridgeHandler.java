@@ -1,12 +1,16 @@
 package org.openhab.binding.jsupla.handler;
 
 import org.eclipse.smarthome.config.core.Configuration;
+import org.eclipse.smarthome.core.common.ThreadPoolManager;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
+import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
+import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.jsupla.internal.ReadWriteMonad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.api.generated.ApiClient;
@@ -14,10 +18,15 @@ import pl.grzeslowski.jsupla.api.generated.ApiException;
 import pl.grzeslowski.jsupla.api.generated.api.ServerApi;
 import pl.grzeslowski.jsupla.api.generated.model.ServerInfo;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import static java.util.Optional.ofNullable;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.smarthome.core.thing.ThingStatus.OFFLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
@@ -30,11 +39,12 @@ import static org.openhab.binding.jsupla.internal.cloud.ApiClientFactory.FACTORY
 @SuppressWarnings("PackageAccessibility")
 public class CloudBridgeHandler extends BaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
-    private ApiClient bridgeApiClient;
+    private final ReadWriteMonad<Set<CloudDeviceHandler>> cloudDeviceHandlers = new ReadWriteMonad<>(new HashSet<>());
     private String oAuthToken;
     private String address;
     private String apiVersion;
     private String cloudVersion;
+    private ScheduledFuture<?> scheduledFuture;
 
     public CloudBridgeHandler(final Bridge bridge) {
         super(bridge);
@@ -55,7 +65,7 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
         // init bridge api client
         final Configuration config = this.getConfig();
         this.oAuthToken = (String) config.get(O_AUTH_TOKEN);
-        this.bridgeApiClient = FACTORY.newApiClient(oAuthToken, logger);
+        final ApiClient bridgeApiClient = FACTORY.newApiClient(oAuthToken, logger);
 
         // get server info
         ServerApi serverApi = new ServerApi(bridgeApiClient);
@@ -81,8 +91,25 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
             return;
         }
 
+        final ScheduledExecutorService scheduledPool = ThreadPoolManager.getScheduledPool("cloud-bridge-refresh-children");
+        final Integer refreshInterval = (Integer) config.get("refreshInterval");
+        this.scheduledFuture = scheduledPool.scheduleAtFixedRate(
+                this::refreshCloudDevices,
+                refreshInterval * 2,
+                refreshInterval,
+                SECONDS);
+
         // done
         updateStatus(ONLINE);
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(true);
+            scheduledFuture = null;
+        }
     }
 
     @Override
@@ -100,11 +127,32 @@ public class CloudBridgeHandler extends BaseBridgeHandler {
         }
     }
 
-    public Optional<ApiClient> getBridgeApiClient() {
-        return ofNullable(bridgeApiClient);
+    public Optional<String> getOAuthToken() {
+        return ofNullable(oAuthToken);
     }
 
-    public Optional<String> getoAuthToken() {
-        return ofNullable(oAuthToken);
+    @Override
+    public void childHandlerInitialized(ThingHandler childHandler, Thing childThing) {
+        super.childHandlerInitialized(childHandler, childThing);
+        if (childHandler instanceof CloudDeviceHandler) {
+            logger.trace("Add `{}` to cloudDeviceHandlers", childHandler.getThing().getUID());
+            cloudDeviceHandlers.doInWriteLock(
+                    cloudDeviceHandlers -> cloudDeviceHandlers.add((CloudDeviceHandler) childHandler));
+        }
+    }
+
+    @Override
+    public void childHandlerDisposed(ThingHandler childHandler, Thing childThing) {
+        super.childHandlerDisposed(childHandler, childThing);
+        if (childHandler instanceof CloudDeviceHandler) {
+            logger.trace("Remove `{}` to cloudDeviceHandlers", childHandler.getThing().getUID());
+            cloudDeviceHandlers.doInWriteLock(cloudDeviceHandlers -> cloudDeviceHandlers.remove(childHandler));
+        }
+    }
+
+    private void refreshCloudDevices() {
+        logger.info("Starting to refresh cloud devices");
+        cloudDeviceHandlers.doInReadLock(
+                cloudDeviceHandlers -> cloudDeviceHandlers.forEach(CloudDeviceHandler::refresh));
     }
 }

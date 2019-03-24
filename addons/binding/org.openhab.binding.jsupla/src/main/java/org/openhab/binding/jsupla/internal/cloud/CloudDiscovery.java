@@ -40,7 +40,7 @@ public final class CloudDiscovery extends AbstractDiscoveryService {
     @Override
     protected void startScan() {
         logger.debug("Starting Supla Cloud discovery scan");
-        final Optional<String> token = bridgeHandler.getoAuthToken();
+        final Optional<String> token = bridgeHandler.getOAuthToken();
         if (!token.isPresent()) {
             logger.warn("There is no OAuth token for bridge {}! Discovery was cancel.",
                     bridgeHandler.getThing().getUID());

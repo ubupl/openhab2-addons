@@ -44,6 +44,7 @@ import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.BRIDGE_UNINITIALIZED;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.COMMUNICATION_ERROR;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
+import static org.eclipse.smarthome.core.types.RefreshType.REFRESH;
 import static org.openhab.binding.jsupla.JSuplaBindingConstants.SUPLA_DEVICE_CLOUD_ID;
 import static org.openhab.binding.jsupla.internal.cloud.CloudChannelFactory.FACTORY;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.CLOSE;
@@ -85,20 +86,20 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             return;
         }
         CloudBridgeHandler handler = (CloudBridgeHandler) bridgeHandler;
-        final Optional<String> token = handler.getoAuthToken();
+        final Optional<String> token = handler.getOAuthToken();
         if (!token.isPresent()) {
             updateStatus(OFFLINE, CONFIGURATION_ERROR, "There is no OAuth token in bridge!");
             return;
         }
-        initChannels(token.get());
+        apiClient = ApiClientFactory.FACTORY.newApiClient(token.get(), logger);
+        channelsApi = new ChannelsApi(apiClient);
+        initChannels();
 
         // done
         updateStatus(ONLINE);
     }
 
-    private void initChannels(final String token) {
-        apiClient = ApiClientFactory.FACTORY.newApiClient(token, logger);
-        channelsApi = new ChannelsApi(apiClient);
+    private void initChannels() {
         final IoDevicesApi ioDevicesApi = new IoDevicesApi(apiClient);
         final String cloudIdString = valueOf(getConfig().get(SUPLA_DEVICE_CLOUD_ID));
         final int cloudId;
@@ -219,5 +220,13 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                 logger.warn("Does not know how to map {} to OpenHAB state", name);
                 return Optional.empty();
         }
+    }
+
+    void refresh() {
+        logger.debug("Refreshing `{}`", thing.getUID());
+        thing.getChannels()
+                .stream()
+                .map(Channel::getUID)
+                .forEach(channelUID -> handleCommand(channelUID, REFRESH));
     }
 }
