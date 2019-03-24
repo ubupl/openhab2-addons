@@ -6,9 +6,9 @@
 						  org.eclipse.smarthome.thing-description.xsd">
 
 	<bridge-type id="supla-cloud-bridge">
-		<label>Bridge for Supla Cloud</label>
+		<label>Supla Cloud</label>
 		<description>
-			This bridge allows OpenHAB to connect via REST API to Supla Cloud.
+			This bridge allows OpenHAB to connect via REST API to Supla Cloud.&lt;br /&gt;
 			Please double check that you enabled REST API in your server config.
 		</description>
 
