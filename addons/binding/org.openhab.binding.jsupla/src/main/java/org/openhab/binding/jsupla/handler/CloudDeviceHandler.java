@@ -61,7 +61,6 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnu
 @SuppressWarnings("PackageAccessibility")
 public final class CloudDeviceHandler extends AbstarctDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
-    private CloudBridgeHandler cloudBridgeHandler;
     private ApiClient apiClient;
     private ChannelsApi channelsApi;
 
