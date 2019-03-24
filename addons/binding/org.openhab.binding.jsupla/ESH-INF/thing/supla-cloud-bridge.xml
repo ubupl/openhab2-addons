@@ -24,7 +24,7 @@
 				<label>OAuth Token</label>
 				<description>
 					<![CDATA[
-						OAuth token generated from <a href="https://cloud.supla.org/integrations/tokens">Supla Cloud</a>.
+						OAuth token generated from <em>https://cloud.supla.org/integrations/tokens</em>.
 					]]></description>
 				<context>password</context>
 			</parameter>
