@@ -34,11 +34,7 @@ public class SuplaBindingConstants {
             SUPLA_DEVICE_TYPE,
             SUPLA_SERVER_TYPE,
             SUPLA_CLOUD_SERVER_TYPE);
-
-    // List of all Channel ids
-    public static final String LIGHT_CHANNEL = "light-channel";
-    public static final String SWITCH_CHANNEL = "switch-channel";
-
+    
     // supla device and cloud-device
     public static final String SUPLA_DEVICE_GUID = "supla-device-guid";
     public static final String SUPLA_DEVICE_CLOUD_ID = "cloud-id";
