@@ -75,6 +75,7 @@ public class SuplaCloudBridgeHandler extends BaseBridgeHandler {
         this.suplaDeviceRegistry = suplaDeviceRegistry;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void initialize() {
         updateConnectedDevices();
@@ -128,7 +129,6 @@ public class SuplaCloudBridgeHandler extends BaseBridgeHandler {
         updateState(CONNECTED_DEVICES_CHANNEL_ID, new DecimalType(numberOfConnectedDevices));
     }
 
-    @SuppressWarnings("unchecked")
     private ServerFactory buildServerFactory() {
         return new NettyServerFactory(
                 new CallTypeParserImpl(),

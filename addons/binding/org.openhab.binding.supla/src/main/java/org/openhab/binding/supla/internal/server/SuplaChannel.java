@@ -93,6 +93,7 @@ public final class SuplaChannel {
         this.authKey = requireNonNull(authKey);
     }
 
+    @SuppressWarnings("deprecation")
     public synchronized void onNext(final ToServerEntity entity) {
         logger.trace("{} -> {}", guid, entity);
         lastMessageFromDevice.set(now().getEpochSecond());

@@ -63,7 +63,7 @@ public class SuplaHandlerFactory extends BaseThingHandlerFactory {
         final @Nullable SuplaDeviceRegistry suplaDeviceRegistryNonNull = suplaDeviceRegistry;
         if (SUPLA_DEVICE_TYPE.equals(thingTypeUID)) {
             final ThingUID bridgeUID = requireNonNull(thing.getBridgeUID(), "No bridge for " + thing);
-            final ThingTypeUID bridgeTypeUID = bridgeUID.getThingTypeUID();
+            @SuppressWarnings("deprecation") final ThingTypeUID bridgeTypeUID = bridgeUID.getThingTypeUID();
             if (SUPLA_SERVER_TYPE.equals(bridgeTypeUID)) {
                 return newSuplaDeviceHandler(thing, suplaDeviceRegistryNonNull);
             } else if (SUPLA_CLOUD_SERVER_TYPE.equals(bridgeTypeUID)) {

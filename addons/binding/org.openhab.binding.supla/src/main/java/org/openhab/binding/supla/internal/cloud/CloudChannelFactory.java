@@ -49,7 +49,6 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.THE
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.WEIGHTSENSOR;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.WINDSENSOR;
 
-@SuppressWarnings("PackageAccessibility")
 public final class CloudChannelFactory {
     public static final CloudChannelFactory FACTORY = new CloudChannelFactory();
     private static final Set<ChannelType.NameEnum> RELAY_TYPES = newHashSet(

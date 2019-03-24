@@ -21,10 +21,11 @@ import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_E
 abstract class AbstractDeviceHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(AbstractDeviceHandler.class);
 
-    public AbstractDeviceHandler(final Thing thing) {
+    AbstractDeviceHandler(final Thing thing) {
         super(thing);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public final void initialize() {
         try {

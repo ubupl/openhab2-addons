@@ -37,7 +37,6 @@ import static org.openhab.binding.supla.SuplaBindingConstants.CLOUD_VERSION_CHAN
 import static org.openhab.binding.supla.SuplaBindingConstants.O_AUTH_TOKEN;
 import static org.openhab.binding.supla.internal.cloud.ApiClientFactory.FACTORY;
 
-@SuppressWarnings("PackageAccessibility")
 public class CloudBridgeHandler extends BaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private final ReadWriteMonad<Set<CloudDeviceHandler>> cloudDeviceHandlers = new ReadWriteMonad<>(new HashSet<>());

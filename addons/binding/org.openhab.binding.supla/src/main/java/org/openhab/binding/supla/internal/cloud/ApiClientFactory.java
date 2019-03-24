@@ -6,7 +6,6 @@ import pl.grzeslowski.jsupla.api.generated.ApiClient;
 
 import static com.squareup.okhttp.logging.HttpLoggingInterceptor.Level.BODY;
 
-@SuppressWarnings("PackageAccessibility")
 public class ApiClientFactory {
     public static final ApiClientFactory FACTORY = new ApiClientFactory();
 
@@ -16,9 +15,5 @@ public class ApiClientFactory {
             apiClient.setDebugging(logger.isDebugEnabled(), new OneLineHttpLoggingInterceptor(logger::trace, BODY));
         }
         return apiClient;
-    }
-
-    public ApiClient newApiClient(String token) {
-        return newApiClient(token, null);
     }
 }

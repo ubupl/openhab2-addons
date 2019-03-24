@@ -59,7 +59,6 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnu
  *
  * @author Martin Grześlowski - initial contributor
  */
-@SuppressWarnings("PackageAccessibility")
 public final class CloudDeviceHandler extends AbstractDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private ApiClient apiClient;
@@ -70,7 +69,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     }
 
     @Override
-    protected void internalInitialize() throws Exception {
+    protected void internalInitialize() {
         @Nullable final Bridge bridge = getBridge();
         if (bridge == null) {
             logger.debug("No bridge for thing with UID {}", thing.getUID());
@@ -158,22 +157,22 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     }
 
     @Override
-    protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) throws Exception {
+    protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) {
 // TODO handle this command
     }
 
     @Override
-    protected void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) throws Exception {
+    protected void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) {
 // TODO handle this command
     }
 
     @Override
-    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) throws Exception {
+    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) {
 // TODO handle this command
     }
 
     @Override
-    protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) throws Exception {
+    protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) {
 // TODO handle this command
     }
 
