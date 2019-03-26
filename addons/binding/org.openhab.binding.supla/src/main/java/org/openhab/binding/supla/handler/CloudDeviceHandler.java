@@ -138,10 +138,14 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                 channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
         final ChannelState channelState = channel.getState();
         final ChannelFunctionEnumNames name = channel.getFunction().getName();
-        findState(channelState, name).ifPresent(state -> {
-            logger.trace("Updating state `{}` to `{}`", channelUID, state);
-            updateState(channelUID, state);
-        });
+        Optional<State> foundSatet = findState(channelState, name);
+        if (foundSatet.isPresent()) {
+            logger.trace("Updating state `{}` to `{}`", channelUID, foundSatet.get());
+            updateState(channelUID, foundSatet.get());
+        } else {
+            logger.warn("There was no found state for channel `{}` channelState={}, name={}",
+                    channelUID, channelState, name);
+        }
     }
 
     @Override
