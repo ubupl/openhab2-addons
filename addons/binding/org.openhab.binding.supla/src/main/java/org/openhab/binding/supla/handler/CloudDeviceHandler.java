@@ -200,23 +200,32 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             case OPENINGSENSOR_WINDOW:
             case MAILSENSOR:
             case STAIRCASETIMER:
-                return of(state.getHi()).map(hi -> hi ? ON : OFF);
+                return of(state).map(ChannelState::getHi).map(hi -> hi ? ON : OFF);
             case POWERSWITCH:
             case LIGHTSWITCH:
-                return of(state.getOn()).map(on -> on ? ON : OFF);
+                return of(state).map(ChannelState::getOn).map(on -> on ? ON : OFF);
             case THERMOMETER:
-                return of(new DecimalType(state.getTemperature()));
+                return of(state).map(ChannelState::getTemperature).map(DecimalType::new);
             case HUMIDITY:
-                return of(new DecimalType(state.getHumidity()));
+                return of(state).map(ChannelState::getHumidity).map(DecimalType::new);
             case HUMIDITYANDTEMPERATURE:
-                return of(new StringType(state.getTemperature() + " °C" + state.getHumidity() + "%"));
+                return of(state)
+                               .map(s -> s.getTemperature() + " °C" + s.getHumidity() + "%")
+                               .map(StringType::new);
             case DIMMER:
-                return of(new DecimalType(state.getBrightness() / 100.0));
-            // case RGBLIGHTING: case DIMMERANDRGBLIGHTING: // TODO support color 
+                return of(state)
+                               .map(ChannelState::getBrightness)
+                               .map(b -> b / 100.0)
+                               .map(DecimalType::new);
+            // case RGBLIGHTING: case DIMMERANDRGBLIGHTING: // TODO support color
             case DEPTHSENSOR:
-                return of(new DecimalType(state.getDepth()));
+                return of(state)
+                               .map(ChannelState::getDepth)
+                               .map(DecimalType::new);
             case DISTANCESENSOR:
-                return of(new DecimalType(state.getDistance()));
+                return of(state)
+                               .map(ChannelState::getDistance)
+                               .map(DecimalType::new);
             default:
                 logger.warn("Does not know how to map {} to OpenHAB state", name);
                 return Optional.empty();
