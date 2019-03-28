@@ -26,6 +26,7 @@ import pl.grzeslowski.jsupla.api.generated.model.ChannelExecuteActionRequest;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelFunction;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelState;
+import pl.grzeslowski.jsupla.api.generated.model.Device;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -45,6 +47,7 @@ import static org.eclipse.smarthome.core.thing.ThingStatus.ONLINE;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.BRIDGE_UNINITIALIZED;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.COMMUNICATION_ERROR;
 import static org.eclipse.smarthome.core.thing.ThingStatusDetail.CONFIGURATION_ERROR;
+import static org.eclipse.smarthome.core.thing.ThingStatusDetail.NONE;
 import static org.eclipse.smarthome.core.types.RefreshType.REFRESH;
 import static org.openhab.binding.supla.SuplaBindingConstants.SUPLA_DEVICE_CLOUD_ID;
 import static org.openhab.binding.supla.internal.cloud.CloudChannelFactory.FACTORY;
@@ -65,13 +68,15 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private ApiClient apiClient;
     private ChannelsApi channelsApi;
+    private int cloudId;
+    private IoDevicesApi ioDevicesApi;
 
     public CloudDeviceHandler(final Thing thing) {
         super(thing);
     }
 
     @Override
-    protected void internalInitialize() {
+    protected void internalInitialize() throws ApiException {
         @Nullable final Bridge bridge = getBridge();
         if (bridge == null) {
             logger.debug("No bridge for thing with UID {}", thing.getUID());
@@ -92,25 +97,65 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             updateStatus(OFFLINE, CONFIGURATION_ERROR, "There is no OAuth token in bridge!");
             return;
         }
-        apiClient = ApiClientFactory.FACTORY.newApiClient(token.get(), logger);
-        channelsApi = new ChannelsApi(apiClient);
+        initApi(token.get());
+
+        if (!initCloudApi()) {
+            return;
+        }
+
+        if (!checkIfIsOnline()) {
+            return;
+        }
+
+        if (!checkIfIsEnabled()) {
+            return;
+        }
+
         initChannels();
 
         // done
         updateStatus(ONLINE);
     }
 
-    private void initChannels() {
-        final IoDevicesApi ioDevicesApi = new IoDevicesApi(apiClient);
+    private boolean initCloudApi() {
         final String cloudIdString = valueOf(getConfig().get(SUPLA_DEVICE_CLOUD_ID));
-        final int cloudId;
         try {
-            cloudId = parseInt(cloudIdString);
+            this.cloudId = parseInt(cloudIdString);
+            return true;
         } catch (NumberFormatException e) {
             logger.error("Cannot parse cloud ID `{}` to integer!", cloudIdString, e);
             updateStatus(OFFLINE, CONFIGURATION_ERROR, "Cloud ID is incorrect!");
-            return;
+            return false;
         }
+    }
+
+    private void initApi(final String token) {
+        apiClient = ApiClientFactory.FACTORY.newApiClient(token, logger);
+        ioDevicesApi = new IoDevicesApi(apiClient);
+        channelsApi = new ChannelsApi(apiClient);
+    }
+
+    private boolean checkIfIsOnline() throws ApiException {
+        final Device device = ioDevicesApi.getIoDevice(cloudId, singletonList("connected"));
+        if (device.isConnected() == null || !device.isConnected()) {
+            updateStatus(OFFLINE, NONE, "This device is is not connected to Supla Cloud.");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private boolean checkIfIsEnabled() throws ApiException {
+        final Device device = ioDevicesApi.getIoDevice(cloudId, emptyList());
+        if (device.isEnabled() == null || !device.isEnabled()) {
+            updateStatus(OFFLINE, NONE, "This device is tuned off in Supla Cloud.");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private void initChannels() {
         try {
             final List<Channel> channels = ioDevicesApi.getIoDevice(cloudId, singletonList("channels"))
                                                    .getChannels()
@@ -247,9 +292,17 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
 
     void refresh() {
         logger.debug("Refreshing `{}`", thing.getUID());
-        thing.getChannels()
-                .stream()
-                .map(Channel::getUID)
-                .forEach(channelUID -> handleCommand(channelUID, REFRESH));
+        try {
+            if (checkIfIsOnline() && checkIfIsEnabled()) {
+                updateStatus(ONLINE);
+                logger.trace("Thing `{}` is connected & enabled. Refreshing channels", thing.getUID());
+                thing.getChannels()
+                        .stream()
+                        .map(Channel::getUID)
+                        .forEach(channelUID -> handleCommand(channelUID, REFRESH));
+            }
+        } catch (ApiException e) {
+            logger.error("Cannot check if device `{}` is online/enabled", thing.getUID(), e);
+        }
     }
 }
