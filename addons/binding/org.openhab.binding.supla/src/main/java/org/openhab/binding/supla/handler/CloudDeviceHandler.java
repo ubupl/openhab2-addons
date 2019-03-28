@@ -23,8 +23,8 @@ import pl.grzeslowski.jsupla.api.generated.ApiException;
 import pl.grzeslowski.jsupla.api.generated.api.ChannelsApi;
 import pl.grzeslowski.jsupla.api.generated.api.IoDevicesApi;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelExecuteActionRequest;
+import pl.grzeslowski.jsupla.api.generated.model.ChannelFunction;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum;
-import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionEnumNames;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelState;
 
 import java.util.List;
@@ -35,6 +35,7 @@ import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.eclipse.smarthome.core.library.types.OnOffType.OFF;
 import static org.eclipse.smarthome.core.library.types.OnOffType.ON;
@@ -59,6 +60,7 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnu
  *
  * @author Martin Grześlowski - initial contributor
  */
+@SuppressWarnings("PackageAccessibility")
 public final class CloudDeviceHandler extends AbstractDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
     private ApiClient apiClient;
@@ -113,6 +115,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             final List<Channel> channels = ioDevicesApi.getIoDevice(cloudId, singletonList("channels"))
                                                    .getChannels()
                                                    .stream()
+                                                   .filter(channel -> !channel.isHidden())
                                                    .map(channel -> FACTORY.createChannel(channel, thing.getUID()))
                                                    .filter(Optional::isPresent)
                                                    .map(Optional::get)
@@ -136,15 +139,13 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         logger.trace("Refreshing channel `{}`", channelUID);
         final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
                 channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
-        final ChannelState channelState = channel.getState();
-        final ChannelFunctionEnumNames name = channel.getFunction().getName();
-        Optional<State> foundSatet = findState(channelState, name);
-        if (foundSatet.isPresent()) {
-            logger.trace("Updating state `{}` to `{}`", channelUID, foundSatet.get());
-            updateState(channelUID, foundSatet.get());
+        Optional<State> foundState = findState(channel);
+        if (foundState.isPresent()) {
+            logger.trace("Updating state `{}` to `{}`", channelUID, foundState.get());
+            updateState(channelUID, foundState.get());
         } else {
-            logger.warn("There was no found state for channel `{}` channelState={}, name={}",
-                    channelUID, channelState, name);
+            logger.warn("There was no found state for channel `{}` channelState={}, function={}",
+                    channelUID, channel.getState(), channel.getFunction());
         }
     }
 
@@ -163,21 +164,25 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     @Override
     protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) {
 // TODO handle this command
+        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
     }
 
     @Override
-    protected void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) {
-// TODO handle this command
+    protected void handleOpenClosedCommand(final ChannelUID channelUID, final OpenClosedType command) throws ApiException {
+        final int channelId = parseInt(channelUID.getId());
+        handleOneZeroCommand(channelId, command == OpenClosedType.OPEN, OPEN, CLOSE);
     }
 
     @Override
     protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) {
 // TODO handle this command
+        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
     }
 
     @Override
     protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) {
 // TODO handle this command
+        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
     }
 
     private void handleOneZeroCommand(final int channelId,
@@ -188,51 +193,55 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         channelsApi.executeAction(channelId, new ChannelExecuteActionRequest().action(action));
     }
 
-    private Optional<State> findState(ChannelState state, ChannelFunctionEnumNames name) {
-        switch (name) {
-            case CONTROLLINGTHEGATEWAYLOCK:
-            case CONTROLLINGTHEGATE:
-            case CONTROLLINGTHEGARAGEDOOR:
+    private Optional<State> findState(pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
+        final Optional<ChannelState> state = of(channel.getState());
+        final ChannelFunction function = channel.getFunction();
+        boolean param2Present = channel.getParam2() != null && channel.getParam2() > 0;
+
+        switch (function.getName()) {
             case OPENINGSENSOR_GATEWAY:
             case OPENINGSENSOR_GATE:
             case OPENINGSENSOR_GARAGEDOOR:
             case NOLIQUIDSENSOR:
             case CONTROLLINGTHEDOORLOCK:
             case OPENINGSENSOR_DOOR:
-            case CONTROLLINGTHEROLLERSHUTTER:
             case OPENINGSENSOR_ROLLERSHUTTER:
             case OPENINGSENSOR_WINDOW:
             case MAILSENSOR:
-            case STAIRCASETIMER:
-                return of(state).map(ChannelState::getHi).map(hi -> hi ? ON : OFF);
+            case CONTROLLINGTHEGATEWAYLOCK:
+            case CONTROLLINGTHEGATE:
+            case CONTROLLINGTHEGARAGEDOOR:
+                if (param2Present) {
+                    return state.map(ChannelState::getHi).map(hi -> hi ? ON : OFF);
+                } else {
+                    return empty();
+                }
             case POWERSWITCH:
+            case STAIRCASETIMER:
             case LIGHTSWITCH:
-                return of(state).map(ChannelState::getOn).map(on -> on ? ON : OFF);
-            case THERMOMETER:
-                return of(state).map(ChannelState::getTemperature).map(DecimalType::new);
-            case HUMIDITY:
-                return of(state).map(ChannelState::getHumidity).map(DecimalType::new);
-            case HUMIDITYANDTEMPERATURE:
-                return of(state)
-                               .map(s -> s.getTemperature() + " °C" + s.getHumidity() + "%")
-                               .map(StringType::new);
+                return state.map(ChannelState::getOn).map(on -> on ? ON : OFF);
             case DIMMER:
-                return of(state)
-                               .map(ChannelState::getBrightness)
+                return state.map(ChannelState::getBrightness)
                                .map(b -> b / 100.0)
                                .map(DecimalType::new);
-            // case RGBLIGHTING: case DIMMERANDRGBLIGHTING: // TODO support color
+//            case RGBLIGHTING: case DIMMERANDRGBLIGHTING: // TODO support
             case DEPTHSENSOR:
-                return of(state)
-                               .map(ChannelState::getDepth)
-                               .map(DecimalType::new);
+                return state.map(ChannelState::getDepth).map(DecimalType::new);
             case DISTANCESENSOR:
-                return of(state)
-                               .map(ChannelState::getDistance)
-                               .map(DecimalType::new);
+                return state.map(ChannelState::getDistance).map(DecimalType::new);
+            case CONTROLLINGTHEROLLERSHUTTER:
+                return state.map(ChannelState::getShut).map(PercentType::new);
+            case THERMOMETER:
+                return state.map(ChannelState::getTemperature).map(DecimalType::new);
+            case HUMIDITY:
+                return state.map(ChannelState::getHumidity).map(DecimalType::new);
+            case HUMIDITYANDTEMPERATURE:
+                return state.map(s -> s.getTemperature() + " °C" + s.getHumidity() + "%").map(StringType::new);
+            case NONE:
+                return empty();
             default:
-                logger.warn("Does not know how to map {} to OpenHAB state", name);
-                return Optional.empty();
+                logger.warn("Does not know how to map `{}` to OpenHAB state", channel.getState());
+                return empty();
         }
     }
 

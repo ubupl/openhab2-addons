@@ -9,108 +9,76 @@ import org.openhab.binding.supla.SuplaBindingConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelFunction;
-import pl.grzeslowski.jsupla.api.generated.model.ChannelType;
 
 import java.util.Optional;
-import java.util.Set;
 
-import static com.google.common.collect.Sets.newHashSet;
 import static java.lang.String.valueOf;
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.DECIMAL_CHANNEL_ID;
+import static org.openhab.binding.supla.SuplaBindingConstants.Channels.DIMMER_CHANNEL_ID;
+import static org.openhab.binding.supla.SuplaBindingConstants.Channels.HUMIDITY_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.LIGHT_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.RGB_CHANNEL_ID;
+import static org.openhab.binding.supla.SuplaBindingConstants.Channels.ROLLER_SHUTTER_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.SWITCH_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.TEMPERATURE_AND_HUMIDITY_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.TEMPERATURE_CHANNEL_ID;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionEnumNames.LIGHTSWITCH;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.AM2301;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.AM2302;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.CALLBUTTON;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.DHT11;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.DHT21;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.DHT22;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.DIMMER;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.DIMMERANDRGBLED;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.DISTANCESENSOR;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.HUMIDITYANDTEMPSENSOR;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.HUMIDITYSENSOR;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.PRESSURESENSOR;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.RAINSENSOR;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.RELAY;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.RELAY2XG5LA1A;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.RELAYG5LA1A;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.RELAYHFD4;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.RGBLEDCONTROLLER;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.SENSORNC;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.SENSORNO;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.THERMOMETER;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.THERMOMETERDS18B20;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.WEIGHTSENSOR;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelType.NameEnum.WINDSENSOR;
 
 public final class CloudChannelFactory {
     public static final CloudChannelFactory FACTORY = new CloudChannelFactory();
-    private static final Set<ChannelType.NameEnum> RELAY_TYPES = newHashSet(
-            SENSORNO,
-            SENSORNC,
-            DISTANCESENSOR,
-            CALLBUTTON,
-            RELAYHFD4,
-            RELAYG5LA1A,
-            RELAY2XG5LA1A,
-            RELAY);
-    private static final Set<ChannelType.NameEnum> TEMPERATURE_TYPES = newHashSet(
-            THERMOMETERDS18B20,
-            DHT11,
-            DHT21,
-            DHT22,
-            AM2301,
-            AM2302,
-            THERMOMETER
-    );
-    private static final Set<ChannelType.NameEnum> TEMPERATURE_AND_HUMIDITY_TYPES = newHashSet(HUMIDITYANDTEMPSENSOR);
-    private static final Set<ChannelType.NameEnum> DECIMAL_TYPES = newHashSet(
-            // humidity
-            HUMIDITYSENSOR,
-            // others
-            WINDSENSOR,
-            PRESSURESENSOR,
-            RAINSENSOR,
-            DIMMER,
-            WEIGHTSENSOR
-    );
-    private static final Set<ChannelType.NameEnum> COLOR_CHANNEL_TYPES = newHashSet(
-            RGBLEDCONTROLLER,
-            DIMMERANDRGBLED
-    );
     private final Logger logger = LoggerFactory.getLogger(CloudChannelFactory.class);
 
     public Optional<Channel> createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel, ThingUID thingUID) {
-        final ChannelType type = channel.getType();
-        final ChannelType.NameEnum name = type.getName();
-        if (RELAY_TYPES.contains(name)) {
-            final ChannelFunction function = channel.getFunction();
-            if (function != null && LIGHTSWITCH.equals(function.getName())) {
-                return Optional.of(createChannel(channel, thingUID, LIGHT_CHANNEL_ID, "Switch"));
-            } else {
-                return Optional.of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
-            }
+        final ChannelFunction function = channel.getFunction();
+        boolean param2Present = channel.getParam2() != null && channel.getParam2() > 0;
+
+        switch (function.getName()) {
+            case OPENINGSENSOR_GATEWAY:
+            case OPENINGSENSOR_GATE:
+            case OPENINGSENSOR_GARAGEDOOR:
+            case NOLIQUIDSENSOR:
+            case CONTROLLINGTHEDOORLOCK:
+            case OPENINGSENSOR_DOOR:
+            case OPENINGSENSOR_ROLLERSHUTTER:
+            case OPENINGSENSOR_WINDOW:
+            case MAILSENSOR:
+            case POWERSWITCH: // has on.off
+            case STAIRCASETIMER: // has on.off
+                return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+            case LIGHTSWITCH:
+                return of(createChannel(channel, thingUID, LIGHT_CHANNEL_ID, "Switch"));
+            case DIMMER:
+                return of(createChannel(channel, thingUID, DIMMER_CHANNEL_ID, "Dimmer"));
+            case RGBLIGHTING:
+            case DIMMERANDRGBLIGHTING:
+                return of(createChannel(channel, thingUID, RGB_CHANNEL_ID, "Color"));
+            case DEPTHSENSOR:
+            case DISTANCESENSOR:
+                return of(createChannel(channel, thingUID, DECIMAL_CHANNEL_ID, "Number"));
+            case CONTROLLINGTHEROLLERSHUTTER:
+                return of(createChannel(channel, thingUID, ROLLER_SHUTTER_CHANNEL_ID, "Rollershutter"));
+            case CONTROLLINGTHEGATEWAYLOCK:
+            case CONTROLLINGTHEGATE:
+            case CONTROLLINGTHEGARAGEDOOR:
+                if (param2Present) {
+                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                } else {
+                    logger.debug("Channel with function `{}` has not param2! {}", function.getName(), channel);
+                    return empty();
+                }
+            case THERMOMETER:
+                return of(createChannel(channel, thingUID, TEMPERATURE_CHANNEL_ID, "Number"));
+            case HUMIDITY:
+                return of(createChannel(channel, thingUID, HUMIDITY_CHANNEL_ID, "Number"));
+            case HUMIDITYANDTEMPERATURE:
+                return of(createChannel(channel, thingUID, TEMPERATURE_AND_HUMIDITY_CHANNEL_ID, "String"));
+            case NONE:
+                return empty();
+            default:
+                logger.warn("Does not know type of this `{}` function", function.getName());
+                return empty();
         }
-        if (TEMPERATURE_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, TEMPERATURE_CHANNEL_ID, "Number"));
-        }
-        if (TEMPERATURE_AND_HUMIDITY_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, TEMPERATURE_AND_HUMIDITY_CHANNEL_ID, "String"));
-        }
-        if (DECIMAL_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, DECIMAL_CHANNEL_ID, "Number"));
-        }
-        if (COLOR_CHANNEL_TYPES.contains(name)) {
-            return Optional.of(createChannel(channel, thingUID, RGB_CHANNEL_ID, "Color"));
-        }
-        logger.warn("Channel of type {} is not supported!", type);
-        return empty();
     }
 
     private Channel createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel,
