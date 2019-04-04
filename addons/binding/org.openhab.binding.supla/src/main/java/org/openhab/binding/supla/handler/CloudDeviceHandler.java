@@ -235,11 +235,13 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                                       final ChannelFunctionActionEnum first,
                                       final ChannelFunctionActionEnum second) throws ApiException {
         final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
-        channelsApi.executeAction(channelId, new ChannelExecuteActionRequest().action(action));
+        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
     }
 
     private Optional<State> findState(pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
-        final Optional<ChannelState> state = of(channel.getState());
+        final Optional<ChannelState> state = of(channel.getState())
+                                                     .filter(o -> o instanceof ChannelState)
+                                                     .map(o -> (ChannelState) o);
         final ChannelFunction function = channel.getFunction();
         boolean param2Present = channel.getParam2() != null && channel.getParam2() > 0;
 

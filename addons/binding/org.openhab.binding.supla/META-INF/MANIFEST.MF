@@ -3,7 +3,7 @@ Automatic-Module-Name: org.openhab.binding.supla
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
  lib/nettyServer-fat-0.9.15.jar,
- lib/swagger-java-client-fat-0.1.6.jar
+ lib/swagger-java-client-fat-2.0.0.jar
 Bundle-ManifestVersion: 2
 Bundle-Name: supla Binding
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
