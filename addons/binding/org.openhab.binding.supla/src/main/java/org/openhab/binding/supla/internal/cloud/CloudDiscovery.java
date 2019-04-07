@@ -79,12 +79,14 @@ public final class CloudDiscovery extends AbstractDiscoveryService {
 
         final String name = device.getName();
         if (!isNullOrEmpty(name)) {
-            sb.append(name);
-
-            // comment cannot appear without name
             final String comment = device.getComment();
             if (!isNullOrEmpty(comment)) {
-                sb.append("(").append(comment).append(")");
+                sb.append(comment)
+                        .append(" (")
+                        .append(name)
+                        .append(")");
+            } else {
+                sb.append(name);
             }
         }
 
