@@ -29,6 +29,7 @@ import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelState;
 import pl.grzeslowski.jsupla.api.generated.model.Device;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -314,11 +315,11 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             case CONTROLLINGTHEROLLERSHUTTER:
                 return state.map(ChannelState::getShut).map(PercentType::new);
             case THERMOMETER:
-                return state.map(ChannelState::getTemperature).map(DecimalType::new);
+                return state.map(s -> findTemperture(s, channel)).map(DecimalType::new);
             case HUMIDITY:
-                return state.map(ChannelState::getHumidity).map(DecimalType::new);
+                return state.map(s -> findHumidity(s, channel)).map(DecimalType::new);
             case HUMIDITYANDTEMPERATURE:
-                return state.map(s -> s.getTemperature() + " °C" + s.getHumidity() + "%").map(StringType::new);
+                return state.map(s -> findTemperture(s, channel) + " °C" + findHumidity(s, channel) + "%").map(StringType::new);
             case NONE:
                 return empty();
             default:
@@ -345,5 +346,23 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
 
     private pl.grzeslowski.jsupla.api.generated.model.Channel queryForChannel(final int channelId) throws ApiException {
         return channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
+    }
+
+    private BigDecimal findTemperture(ChannelState channelState,
+                                      pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
+        return findValuWithAdjustment(channelState.getTemperature(), channel.getParam2());
+    }
+
+    private BigDecimal findHumidity(ChannelState channelState,
+                                    pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
+        return findValuWithAdjustment(channelState.getHumidity(), channel.getParam3());
+    }
+
+    private BigDecimal findValuWithAdjustment(BigDecimal value, Integer adjustment) {
+        return Optional.ofNullable(adjustment)
+                       .map(v -> v / 100)
+                       .map(BigDecimal::new)
+                       .orElse(BigDecimal.ZERO)
+                       .add(value);
     }
 }
