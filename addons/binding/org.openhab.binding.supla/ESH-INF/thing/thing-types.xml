@@ -53,11 +53,13 @@
 		<item-type>Number</item-type>
 		<label>Decimal value</label>
 		<category>This channel represents plain decimal value</category>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="percentage-channel">
 		<item-type>Number</item-type>
 		<label>Percentage value</label>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="rgb-channel">
@@ -75,16 +77,19 @@
 		<item-type>Number</item-type>
 		<label>Temperature</label>
 		<category>Temperature</category>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="humidity-channel">
 		<item-type>Number</item-type>
 		<label>Humidity</label>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="temperature-and-humidity-channel">
 		<item-type>String</item-type>
 		<label>Temperature and Humidity</label>
+		<state readOnly="true"/>
 	</channel-type>
 
 	<channel-type id="dimmer-channel">
