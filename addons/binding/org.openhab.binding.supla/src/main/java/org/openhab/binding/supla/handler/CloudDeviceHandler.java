@@ -315,11 +315,11 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             case CONTROLLINGTHEROLLERSHUTTER:
                 return state.map(ChannelState::getShut).map(PercentType::new);
             case THERMOMETER:
-                return state.map(s -> findTemperture(s, channel)).map(DecimalType::new);
+                return state.map(s -> findTemperature(s, channel)).map(DecimalType::new);
             case HUMIDITY:
                 return state.map(s -> findHumidity(s, channel)).map(DecimalType::new);
             case HUMIDITYANDTEMPERATURE:
-                return state.map(s -> findTemperture(s, channel) + " °C" + findHumidity(s, channel) + "%").map(StringType::new);
+                return state.map(s -> findTemperature(s, channel) + " °C" + findHumidity(s, channel) + "%").map(StringType::new);
             case NONE:
                 return empty();
             default:
@@ -348,8 +348,8 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         return channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
     }
 
-    private BigDecimal findTemperture(ChannelState channelState,
-                                      pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
+    private BigDecimal findTemperature(ChannelState channelState,
+                                       pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
         return findValuWithAdjustment(channelState.getTemperature(), channel.getParam2());
     }
 
