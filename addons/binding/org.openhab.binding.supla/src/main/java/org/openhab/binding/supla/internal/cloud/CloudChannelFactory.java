@@ -1,6 +1,5 @@
 package org.openhab.binding.supla.internal.cloud;
 
-import com.google.common.base.Strings;
 import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
@@ -17,7 +16,6 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.valueOf;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static org.openhab.binding.supla.SuplaBindingConstants.Channels.CONTACT_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.DECIMAL_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.DIMMER_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.HUMIDITY_CHANNEL_ID;
