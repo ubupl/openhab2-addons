@@ -188,8 +188,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     protected void handleRefreshCommand(final ChannelUID channelUID) throws Exception {
         final int channelId = parseInt(channelUID.getId());
         logger.trace("Refreshing channel `{}`", channelUID);
-        final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
-                channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
         Optional<State> foundState = findState(channel);
         if (foundState.isPresent()) {
             logger.trace("Updating state `{}` to `{}`", channelUID, foundState.get());
@@ -203,13 +202,20 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     @Override
     protected void handleOnOffCommand(final ChannelUID channelUID, final OnOffType command) throws Exception {
         final int channelId = parseInt(channelUID.getId());
-        handleOneZeroCommand(channelId, command == ON, TURN_ON, TURN_OFF);
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
+        switch (channel.getFunction().getName()) {
+            case CONTROLLINGTHEGATE:
+            case CONTROLLINGTHEGARAGEDOOR:
+                handleOneZeroCommand(channelId, command == ON, OPEN, CLOSE);
+            default:
+                handleOneZeroCommand(channelId, command == ON, TURN_ON, TURN_OFF);
+        }
     }
 
     @Override
     protected void handleUpDownCommand(final ChannelUID channelUID, final UpDownType command) throws Exception {
         final int channelId = parseInt(channelUID.getId());
-        handleOneZeroCommand(channelId, command == UP, OPEN, CLOSE);
+        handleOneZeroCommand(channelId, command == UP, REVEAL, SHUT);
     }
 
     @Override
@@ -237,15 +243,25 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     }
 
     @Override
-    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) {
-// TODO handle this command
-        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
+    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) throws ApiException {
+        final int channelId = parseInt(channelUID.getId());
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
+        if (channel.getFunction().getName() == CONTROLLINGTHEROLLERSHUTTER) {
+            final int shut = command.intValue();
+            logger.debug("Channel `{}` is roller shutter; setting shut={}%", channelUID, shut);
+            final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest()
+                                                               .action(REVEAL_PARTIALLY)
+                                                               .percentage(shut);
+            channelsApi.executeAction(action, channelId);
+        } else {
+            logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+        }
     }
 
     @Override
     protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) {
 // TODO handle this command
-        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
+        logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
     }
 
     private void handleOneZeroCommand(final int channelId,
