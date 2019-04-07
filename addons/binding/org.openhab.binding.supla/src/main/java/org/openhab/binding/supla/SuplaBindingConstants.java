@@ -61,6 +61,7 @@ public class SuplaBindingConstants {
     public static class Channels {
         public static final String LIGHT_CHANNEL_ID = "light-channel";
         public static final String SWITCH_CHANNEL_ID = "switch-channel";
+        public static final String SWITCH_CHANNEL_RO_ID = "switch-channel-ro";
         public static final String DECIMAL_CHANNEL_ID = "decimal-channel";
         public static final String RGB_CHANNEL_ID = "rgb-channel";
         public static final String ROLLER_SHUTTER_CHANNEL_ID = "roller-shutter-channel";

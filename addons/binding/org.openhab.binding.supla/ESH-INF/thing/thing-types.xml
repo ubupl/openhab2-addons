@@ -41,6 +41,14 @@
 		<category>Switch</category>
 	</channel-type>
 
+	<channel-type id="switch-channel-ro">
+		<item-type>Switch</item-type>
+		<label>Read only ON/OFF switch</label>
+		<description>Gives you information if channel is ON or OFF</description>
+		<category>Switch</category>
+		<state readOnly="true"/>
+	</channel-type>
+
 	<channel-type id="decimal-channel">
 		<item-type>Number</item-type>
 		<label>Decimal value</label>

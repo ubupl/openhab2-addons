@@ -45,7 +45,12 @@ public final class CloudChannelFactory {
             case MAILSENSOR:
             case POWERSWITCH: // has on.off
             case STAIRCASETIMER: // has on.off
-                return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                if (channel.getType().isOutput()) {
+                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                } else {
+                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_RO_ID, "Switch"));
+                }
+
             case LIGHTSWITCH:
                 return of(createChannel(channel, thingUID, LIGHT_CHANNEL_ID, "Switch"));
             case DIMMER:
@@ -62,7 +67,11 @@ public final class CloudChannelFactory {
             case CONTROLLINGTHEGATE:
             case CONTROLLINGTHEGARAGEDOOR:
                 if (param2Present) {
-                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                    if (channel.getType().isOutput()) {
+                        return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                    } else {
+                        return of(createChannel(channel, thingUID, SWITCH_CHANNEL_RO_ID, "Switch"));
+                    }
                 } else {
                     logger.debug("Channel with function `{}` has not param2! {}", function.getName(), channel);
                     return empty();
