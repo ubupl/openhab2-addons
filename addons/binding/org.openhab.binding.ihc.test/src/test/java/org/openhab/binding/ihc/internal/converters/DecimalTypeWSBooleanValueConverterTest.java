@@ -31,13 +31,13 @@ public class DecimalTypeWSBooleanValueConverterTest {
     @Test
     public void testOn() throws ConversionException {
         final boolean inverted = false;
-        WSBooleanValue val = new WSBooleanValue(12345);
+        WSBooleanValue val = new WSBooleanValue(12345, false);
 
-        val = convertFromOHType(val, new DecimalType(1), new ConverterAdditionalInfo(null, inverted));
-        assertEquals(12345, val.getResourceID());
-        assertEquals(true, val.booleanValue());
+        val = convertFromOHType(val, new DecimalType(1), new ConverterAdditionalInfo(null, inverted, null));
+        assertEquals(12345, val.resourceID);
+        assertEquals(true, val.value);
 
-        DecimalType type = convertFromResourceValue(val, new ConverterAdditionalInfo(null, inverted));
+        DecimalType type = convertFromResourceValue(val, new ConverterAdditionalInfo(null, inverted, null));
         assertEquals(new DecimalType(1), type);
     }
 
@@ -45,12 +45,12 @@ public class DecimalTypeWSBooleanValueConverterTest {
     public void testOff() throws ConversionException {
         final boolean inverted = false;
 
-        WSBooleanValue val = new WSBooleanValue(12345);
-        val = convertFromOHType(val, new DecimalType(0), new ConverterAdditionalInfo(null, inverted));
-        assertEquals(12345, val.getResourceID());
-        assertEquals(false, val.booleanValue());
+        WSBooleanValue val = new WSBooleanValue(12345, true);
+        val = convertFromOHType(val, new DecimalType(0), new ConverterAdditionalInfo(null, inverted, null));
+        assertEquals(12345, val.resourceID);
+        assertEquals(false, val.value);
 
-        DecimalType type = convertFromResourceValue(val, new ConverterAdditionalInfo(null, inverted));
+        DecimalType type = convertFromResourceValue(val, new ConverterAdditionalInfo(null, inverted, null));
         assertEquals(new DecimalType(0), type);
     }
 

@@ -104,7 +104,7 @@ public class ChannelCallback implements ChannelValueSwitch.Callback<org.eclipse.
         final ChannelUID channelUid = createChannelUid();
         final ChannelTypeUID channelTypeUID = createChannelTypeUID(ROLLER_SHUTTER_CHANNEL_ID);
 
-        return ChannelBuilder.create(channelUid, null) // TODO should it be null?
+        return ChannelBuilder.create(channelUid, "Rollershutter")
                        .withType(channelTypeUID)
                        .build();
     }

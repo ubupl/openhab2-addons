@@ -16,6 +16,7 @@ import org.eclipse.smarthome.core.thing.binding.BridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.supla.internal.cloud.ApiClientFactory;
+import org.openhab.binding.supla.internal.cloud.HsbTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.api.generated.ApiClient;
@@ -28,6 +29,7 @@ import pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelState;
 import pl.grzeslowski.jsupla.api.generated.model.Device;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,8 +55,13 @@ import static org.openhab.binding.supla.SuplaBindingConstants.SUPLA_DEVICE_CLOUD
 import static org.openhab.binding.supla.internal.cloud.CloudChannelFactory.FACTORY;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.CLOSE;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.OPEN;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.REVEAL;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.REVEAL_PARTIALLY;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.SET_RGBW_PARAMETERS;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.SHUT;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.TURN_OFF;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.TURN_ON;
+import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionEnumNames.CONTROLLINGTHEROLLERSHUTTER;
 
 /**
  * This is handler for all Supla devices.
@@ -182,8 +189,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     protected void handleRefreshCommand(final ChannelUID channelUID) throws Exception {
         final int channelId = parseInt(channelUID.getId());
         logger.trace("Refreshing channel `{}`", channelUID);
-        final pl.grzeslowski.jsupla.api.generated.model.Channel channel =
-                channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
         Optional<State> foundState = findState(channel);
         if (foundState.isPresent()) {
             logger.trace("Updating state `{}` to `{}`", channelUID, foundState.get());
@@ -197,19 +203,38 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     @Override
     protected void handleOnOffCommand(final ChannelUID channelUID, final OnOffType command) throws Exception {
         final int channelId = parseInt(channelUID.getId());
-        handleOneZeroCommand(channelId, command == ON, TURN_ON, TURN_OFF);
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
+        switch (channel.getFunction().getName()) {
+            case CONTROLLINGTHEGATE:
+            case CONTROLLINGTHEGARAGEDOOR:
+                handleOneZeroCommand(channelId, command == ON, OPEN, CLOSE);
+            default:
+                handleOneZeroCommand(channelId, command == ON, TURN_ON, TURN_OFF);
+        }
     }
 
     @Override
     protected void handleUpDownCommand(final ChannelUID channelUID, final UpDownType command) throws Exception {
         final int channelId = parseInt(channelUID.getId());
-        handleOneZeroCommand(channelId, command == UP, OPEN, CLOSE);
+        handleOneZeroCommand(channelId, command == UP, REVEAL, SHUT);
     }
 
     @Override
-    protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) {
-// TODO handle this command
-        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
+    protected void handleHsbCommand(final ChannelUID channelUID, final HSBType command) throws ApiException {
+        final int channelId = parseInt(channelUID.getId());
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
+        switch (channel.getFunction().getName()) {
+            case RGBLIGHTING:
+            case DIMMERANDRGBLIGHTING:
+                final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest()
+                                                                   .action(SET_RGBW_PARAMETERS)
+                                                                   .color(HsbTypeConverter.INSTANCE.convert(command))
+                                                                   .colorBrightness(command.getSaturation().intValue())
+                                                                   .brightness(command.getBrightness().intValue());
+                channelsApi.executeAction(action, channelId);
+            default:
+                logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+        }
     }
 
     @Override
@@ -219,15 +244,25 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     }
 
     @Override
-    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) {
-// TODO handle this command
-        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
+    protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) throws ApiException {
+        final int channelId = parseInt(channelUID.getId());
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
+        if (channel.getFunction().getName() == CONTROLLINGTHEROLLERSHUTTER) {
+            final int shut = command.intValue();
+            logger.debug("Channel `{}` is roller shutter; setting shut={}%", channelUID, shut);
+            final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest()
+                                                               .action(REVEAL_PARTIALLY)
+                                                               .percentage(shut);
+            channelsApi.executeAction(action, channelId);
+        } else {
+            logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+        }
     }
 
     @Override
     protected void handleDecimalCommand(final ChannelUID channelUID, final DecimalType command) {
 // TODO handle this command
-        logger.warn("Not handling `{}` on channel `{}`", command, channelUID);
+        logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
     }
 
     private void handleOneZeroCommand(final int channelId,
@@ -235,7 +270,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                                       final ChannelFunctionActionEnum first,
                                       final ChannelFunctionActionEnum second) throws ApiException {
         final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
-        channelsApi.executeAction(channelId, new ChannelExecuteActionRequest().action(action));
+        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
     }
 
     private Optional<State> findState(pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
@@ -269,7 +304,10 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                 return state.map(ChannelState::getBrightness)
                                .map(b -> b / 100.0)
                                .map(DecimalType::new);
-//            case RGBLIGHTING: case DIMMERANDRGBLIGHTING: // TODO support
+            case RGBLIGHTING:
+                return state.map(s -> HsbTypeConverter.INSTANCE.toHsbType(s.getColor(), s.getColorBrightness()));
+            case DIMMERANDRGBLIGHTING:
+                return state.map(s -> HsbTypeConverter.INSTANCE.toHsbType(s.getColor(), s.getColorBrightness(), s.getBrightness()));
             case DEPTHSENSOR:
                 return state.map(ChannelState::getDepth).map(DecimalType::new);
             case DISTANCESENSOR:
@@ -277,11 +315,11 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             case CONTROLLINGTHEROLLERSHUTTER:
                 return state.map(ChannelState::getShut).map(PercentType::new);
             case THERMOMETER:
-                return state.map(ChannelState::getTemperature).map(DecimalType::new);
+                return state.map(s -> findTemperature(s, channel)).map(DecimalType::new);
             case HUMIDITY:
-                return state.map(ChannelState::getHumidity).map(DecimalType::new);
+                return state.map(s -> findHumidity(s, channel)).map(DecimalType::new);
             case HUMIDITYANDTEMPERATURE:
-                return state.map(s -> s.getTemperature() + " °C" + s.getHumidity() + "%").map(StringType::new);
+                return state.map(s -> findTemperature(s, channel) + " °C" + findHumidity(s, channel) + "%").map(StringType::new);
             case NONE:
                 return empty();
             default:
@@ -304,5 +342,27 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         } catch (ApiException e) {
             logger.error("Cannot check if device `{}` is online/enabled", thing.getUID(), e);
         }
+    }
+
+    private pl.grzeslowski.jsupla.api.generated.model.Channel queryForChannel(final int channelId) throws ApiException {
+        return channelsApi.getChannel(channelId, asList("supportedFunctions", "state"));
+    }
+
+    private BigDecimal findTemperature(ChannelState channelState,
+                                       pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
+        return findValuWithAdjustment(channelState.getTemperature(), channel.getParam2());
+    }
+
+    private BigDecimal findHumidity(ChannelState channelState,
+                                    pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
+        return findValuWithAdjustment(channelState.getHumidity(), channel.getParam3());
+    }
+
+    private BigDecimal findValuWithAdjustment(BigDecimal value, Integer adjustment) {
+        return Optional.ofNullable(adjustment)
+                       .map(v -> v / 100)
+                       .map(BigDecimal::new)
+                       .orElse(BigDecimal.ZERO)
+                       .add(value);
     }
 }

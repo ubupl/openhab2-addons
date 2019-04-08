@@ -55,9 +55,9 @@ public class IhcClient {
 
     /** Current state of the connection */
     public enum ConnectionState {
-    DISCONNECTED,
-    CONNECTING,
-    CONNECTED
+        DISCONNECTED,
+        CONNECTING,
+        CONNECTED
     }
 
     public static final String CONTROLLER_STATE_READY = "text.ctrl.state.ready";
@@ -340,10 +340,8 @@ public class IhcClient {
     /**
      * Wait controller state change notification.
      *
-     * @param previousState
-     *            Previous controller state.
-     * @param timeoutInSeconds
-     *            How many seconds to wait notifications.
+     * @param previousState        Previous controller state.
+     * @param timeoutInSecondscHow many seconds to wait notifications.
      * @return current controller state.
      */
     private WSControllerState waitStateChangeNotifications(WSControllerState previousState, int timeoutInSeconds)
@@ -354,8 +352,7 @@ public class IhcClient {
     /**
      * Enable resources runtime value notifications.
      *
-     * @param resourceIdList
-     *            List of resource Identifiers.
+     * @param resourceIdList List of resource Identifiers.
      * @return True is connection successfully opened.
      */
     public synchronized void enableRuntimeValueNotifications(Set<Integer> resourceIdList) throws IhcExecption {
@@ -368,8 +365,7 @@ public class IhcClient {
      * Runtime value notification should firstly be activated by
      * enableRuntimeValueNotifications function.
      *
-     * @param timeoutInSeconds
-     *            How many seconds to wait notifications.
+     * @param timeoutInSeconds How many seconds to wait notifications.
      * @return List of received runtime value notifications.
      * @throws SocketTimeoutException
      */
@@ -377,7 +373,7 @@ public class IhcClient {
         List<WSResourceValue> list = resourceInteractionService.waitResourceValueNotifications(timeoutInSeconds);
 
         for (WSResourceValue val : list) {
-            resourceValues.put(val.getResourceID(), val);
+            resourceValues.put(val.resourceID, val);
         }
         return list;
     }
@@ -540,39 +536,38 @@ public class IhcClient {
     }
 
     private void sendErrorEvent(IhcExecption err) {
-        try {
-            Iterator<IhcEventListener> iterator = eventListeners.iterator();
+        Iterator<IhcEventListener> iterator = eventListeners.iterator();
 
-            while (iterator.hasNext()) {
+        while (iterator.hasNext()) {
+            try {
                 iterator.next().errorOccured(err);
+            } catch (RuntimeException e) {
+                logger.debug("Event listener invoking error. ", e);
             }
-        } catch (Exception e) {
-            logger.debug("Event listener invoking error", e);
         }
     }
 
     private void sendControllerStateUpdateEvent(WSControllerState state) {
-        try {
-            Iterator<IhcEventListener> iterator = eventListeners.iterator();
+        Iterator<IhcEventListener> iterator = eventListeners.iterator();
 
-            while (iterator.hasNext()) {
+        while (iterator.hasNext()) {
+            try {
                 iterator.next().statusUpdateReceived(state);
+            } catch (RuntimeException e) {
+                logger.debug("Event listener invoking error. ", e);
             }
-        } catch (Exception e) {
-            logger.debug("Event listener invoking error", e);
         }
     }
 
     private void sendResourceValueUpdateEvent(WSResourceValue value) {
-        try {
-            Iterator<IhcEventListener> iterator = eventListeners.iterator();
+        Iterator<IhcEventListener> iterator = eventListeners.iterator();
 
-            while (iterator.hasNext()) {
+        while (iterator.hasNext()) {
+            try {
                 iterator.next().resourceValueUpdateReceived(value);
+            } catch (RuntimeException e) {
+                logger.debug("Event listener invoking error. ", e);
             }
-
-        } catch (Exception e) {
-            logger.debug("Event listener invoking error", e);
         }
     }
 }

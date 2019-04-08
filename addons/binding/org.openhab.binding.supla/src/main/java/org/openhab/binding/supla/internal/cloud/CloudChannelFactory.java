@@ -12,6 +12,7 @@ import pl.grzeslowski.jsupla.api.generated.model.ChannelFunction;
 
 import java.util.Optional;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.valueOf;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -22,6 +23,7 @@ import static org.openhab.binding.supla.SuplaBindingConstants.Channels.LIGHT_CHA
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.RGB_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.ROLLER_SHUTTER_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.SWITCH_CHANNEL_ID;
+import static org.openhab.binding.supla.SuplaBindingConstants.Channels.SWITCH_CHANNEL_RO_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.TEMPERATURE_AND_HUMIDITY_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.TEMPERATURE_CHANNEL_ID;
 
@@ -45,7 +47,12 @@ public final class CloudChannelFactory {
             case MAILSENSOR:
             case POWERSWITCH: // has on.off
             case STAIRCASETIMER: // has on.off
-                return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                if (channel.getType().isOutput()) {
+                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                } else {
+                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_RO_ID, "Switch"));
+                }
+
             case LIGHTSWITCH:
                 return of(createChannel(channel, thingUID, LIGHT_CHANNEL_ID, "Switch"));
             case DIMMER:
@@ -62,7 +69,11 @@ public final class CloudChannelFactory {
             case CONTROLLINGTHEGATE:
             case CONTROLLINGTHEGARAGEDOOR:
                 if (param2Present) {
-                    return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                    if (channel.getType().isOutput()) {
+                        return of(createChannel(channel, thingUID, SWITCH_CHANNEL_ID, "Switch"));
+                    } else {
+                        return of(createChannel(channel, thingUID, SWITCH_CHANNEL_RO_ID, "Switch"));
+                    }
                 } else {
                     logger.debug("Channel with function `{}` has not param2! {}", function.getName(), channel);
                     return empty();
@@ -87,8 +98,12 @@ public final class CloudChannelFactory {
         final ChannelUID channelUid = new ChannelUID(thingUID, valueOf(channel.getId()));
         final ChannelTypeUID channelTypeUID = new ChannelTypeUID(SuplaBindingConstants.BINDING_ID, id);
 
-        return ChannelBuilder.create(channelUid, acceptedItemType)
-                       .withType(channelTypeUID)
-                       .build();
+        final ChannelBuilder channelBuilder = ChannelBuilder.create(channelUid, acceptedItemType)
+                                                      .withType(channelTypeUID);
+        
+        if(!isNullOrEmpty(channel.getCaption())) {
+            channelBuilder.withLabel(channel.getCaption());
+        }
+        return channelBuilder.build();
     }
 }
