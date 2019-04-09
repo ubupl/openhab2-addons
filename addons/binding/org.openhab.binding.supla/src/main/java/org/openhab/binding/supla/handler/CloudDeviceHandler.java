@@ -171,9 +171,8 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                                                    .getChannels()
                                                    .stream()
                                                    .filter(channel -> !channel.isHidden())
-                                                   .map(channel -> FACTORY.createChannel(channel, thing.getUID()))
-                                                   .filter(Optional::isPresent)
-                                                   .map(Optional::get)
+                                                   .map(channel -> FACTORY.createChannels(channel, thing.getUID()))
+                                                   .flatMap(List::stream)
                                                    .collect(Collectors.toList());
             updateChannels(channels);
         } catch (ApiException e) {

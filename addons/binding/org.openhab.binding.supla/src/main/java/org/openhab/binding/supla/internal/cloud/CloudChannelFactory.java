@@ -10,6 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.grzeslowski.jsupla.api.generated.model.ChannelFunction;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -27,14 +31,31 @@ import static org.openhab.binding.supla.SuplaBindingConstants.Channels.SWITCH_CH
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.TEMPERATURE_AND_HUMIDITY_CHANNEL_ID;
 import static org.openhab.binding.supla.SuplaBindingConstants.Channels.TEMPERATURE_CHANNEL_ID;
 
+@SuppressWarnings("PackageAccessibility")
 public final class CloudChannelFactory {
     public static final CloudChannelFactory FACTORY = new CloudChannelFactory();
     private final Logger logger = LoggerFactory.getLogger(CloudChannelFactory.class);
 
-    public Optional<Channel> createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel, ThingUID thingUID) {
+    public List<Channel> createChannels(pl.grzeslowski.jsupla.api.generated.model.Channel channel, ThingUID thingUID) {
+        final ChannelFunction function = channel.getFunction();
+        switch (function.getName()) {
+            case RGBLIGHTING:
+            case DIMMERANDRGBLIGHTING:
+                return Arrays.asList(
+                        createChannel(channel, thingUID, RGB_CHANNEL_ID, "Color")
+                );
+            default:
+                return createChannel(channel, thingUID)
+                               .map(Collections::singletonList)
+                               .orElse(new ArrayList<>(0));
+
+        }
+
+    }
+
+    private Optional<Channel> createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel, ThingUID thingUID) {
         final ChannelFunction function = channel.getFunction();
         boolean param2Present = channel.getParam2() != null && channel.getParam2() > 0;
-
         switch (function.getName()) {
             case OPENINGSENSOR_GATEWAY:
             case OPENINGSENSOR_GATE:
@@ -92,18 +113,26 @@ public final class CloudChannelFactory {
         }
     }
 
-    private Channel createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel,
-                                  ThingUID thingUID,
-                                  String id, final String acceptedItemType) {
-        final ChannelUID channelUid = new ChannelUID(thingUID, valueOf(channel.getId()));
+    private Channel createChannel(final pl.grzeslowski.jsupla.api.generated.model.Channel channel,
+                                  final ThingUID thingUID,
+                                  final String id,
+                                  final String acceptedItemType,
+                                  final String channelId) {
+        final ChannelUID channelUid = new ChannelUID(thingUID, channelId);
         final ChannelTypeUID channelTypeUID = new ChannelTypeUID(SuplaBindingConstants.BINDING_ID, id);
 
         final ChannelBuilder channelBuilder = ChannelBuilder.create(channelUid, acceptedItemType)
                                                       .withType(channelTypeUID);
-        
-        if(!isNullOrEmpty(channel.getCaption())) {
+
+        if (!isNullOrEmpty(channel.getCaption())) {
             channelBuilder.withLabel(channel.getCaption());
         }
         return channelBuilder.build();
+    }
+
+    private Channel createChannel(pl.grzeslowski.jsupla.api.generated.model.Channel channel,
+                                  ThingUID thingUID,
+                                  String id, final String acceptedItemType) {
+        return createChannel(channel, thingUID, id, acceptedItemType, valueOf(channel.getId()));
     }
 }
