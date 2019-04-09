@@ -30,7 +30,9 @@ import pl.grzeslowski.jsupla.api.generated.model.ChannelState;
 import pl.grzeslowski.jsupla.api.generated.model.Device;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,6 +41,7 @@ import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.eclipse.smarthome.core.library.types.OnOffType.OFF;
@@ -61,7 +64,6 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnu
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.SHUT;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.TURN_OFF;
 import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionActionEnum.TURN_ON;
-import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionEnumNames.CONTROLLINGTHEROLLERSHUTTER;
 
 /**
  * This is handler for all Supla devices.
@@ -73,6 +75,7 @@ import static pl.grzeslowski.jsupla.api.generated.model.ChannelFunctionEnumNames
 @SuppressWarnings("PackageAccessibility")
 public final class CloudDeviceHandler extends AbstractDeviceHandler {
     private final Logger logger = LoggerFactory.getLogger(CloudBridgeHandler.class);
+    private final Map<ChannelUID, HSBType> ledStates = new HashMap<>();
     private ApiClient apiClient;
     private ChannelsApi channelsApi;
     private int cloudId;
@@ -192,8 +195,12 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
         Optional<State> foundState = findState(channel);
         if (foundState.isPresent()) {
-            logger.trace("Updating state `{}` to `{}`", channelUID, foundState.get());
-            updateState(channelUID, foundState.get());
+            final State state = foundState.get();
+            logger.trace("Updating state `{}` to `{}`", channelUID, state);
+            updateState(channelUID, state);
+            if (state instanceof HSBType) {
+                ledStates.put(channelUID, (HSBType) state);
+            }
         } else {
             logger.warn("There was no found state for channel `{}` channelState={}, function={}",
                     channelUID, channel.getState(), channel.getFunction());
@@ -226,12 +233,8 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         switch (channel.getFunction().getName()) {
             case RGBLIGHTING:
             case DIMMERANDRGBLIGHTING:
-                final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest()
-                                                                   .action(SET_RGBW_PARAMETERS)
-                                                                   .color(HsbTypeConverter.INSTANCE.convert(command))
-                                                                   .colorBrightness(command.getSaturation().intValue())
-                                                                   .brightness(command.getBrightness().intValue());
-                channelsApi.executeAction(action, channelId);
+                sendNewLedValue(channelUID, channelId, command);
+                return;
             default:
                 logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
         }
@@ -247,16 +250,44 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
     protected void handlePercentCommand(final ChannelUID channelUID, final PercentType command) throws ApiException {
         final int channelId = parseInt(channelUID.getId());
         final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
-        if (channel.getFunction().getName() == CONTROLLINGTHEROLLERSHUTTER) {
-            final int shut = command.intValue();
-            logger.debug("Channel `{}` is roller shutter; setting shut={}%", channelUID, shut);
-            final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest()
-                                                               .action(REVEAL_PARTIALLY)
-                                                               .percentage(shut);
-            channelsApi.executeAction(action, channelId);
-        } else {
-            logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+        switch (channel.getFunction().getName()) {
+            case CONTROLLINGTHEROLLERSHUTTER:
+                final int shut = command.intValue();
+                logger.debug("Channel `{}` is roller shutter; setting shut={}%", channelUID, shut);
+                final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest().action(REVEAL_PARTIALLY).percentage(shut);
+                channelsApi.executeAction(action, channelId);
+                return;
+            case RGBLIGHTING:
+            case DIMMERANDRGBLIGHTING:
+                if (!ledStates.containsKey(channelUID)) {
+                    logger.warn("There is no LED state for channel `{}`!", channelUID);
+                    return;
+                }
+                final HSBType hsbType = requireNonNull(ledStates.get(channelUID));
+                final HSBType newHsbType = new HSBType(
+                        hsbType.getHue(),
+                        hsbType.getSaturation(),
+                        command
+                );
+                sendNewLedValue(channelUID, channelId, newHsbType);
+                return;
+            default:
+                logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
         }
+    }
+
+    private void sendNewLedValue(final ChannelUID channelUID, int channelId, final HSBType hsbType) throws ApiException {
+        final String rgb = HsbTypeConverter.INSTANCE.convert(hsbType);
+        final int colorBrightness = hsbType.getSaturation().intValue();
+        final int brightness = hsbType.getBrightness().intValue();
+        logger.trace("Changing RGB to {}, color brightness {}%, brightness {}%", rgb, colorBrightness, brightness);
+        final ChannelExecuteActionRequest action = new ChannelExecuteActionRequest()
+                                                           .action(SET_RGBW_PARAMETERS)
+                                                           .color(rgb)
+                                                           .colorBrightness(colorBrightness)
+                                                           .brightness(brightness);
+        channelsApi.executeAction(action, channelId);
+        ledStates.put(channelUID, hsbType);
     }
 
     @Override
@@ -350,15 +381,15 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
 
     private BigDecimal findTemperature(ChannelState channelState,
                                        pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
-        return findValuWithAdjustment(channelState.getTemperature(), channel.getParam2());
+        return findValueWithAdjustment(channelState.getTemperature(), channel.getParam2());
     }
 
     private BigDecimal findHumidity(ChannelState channelState,
                                     pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
-        return findValuWithAdjustment(channelState.getHumidity(), channel.getParam3());
+        return findValueWithAdjustment(channelState.getHumidity(), channel.getParam3());
     }
 
-    private BigDecimal findValuWithAdjustment(BigDecimal value, Integer adjustment) {
+    private BigDecimal findValueWithAdjustment(BigDecimal value, Integer adjustment) {
         return Optional.ofNullable(adjustment)
                        .map(v -> v / 100)
                        .map(BigDecimal::new)
