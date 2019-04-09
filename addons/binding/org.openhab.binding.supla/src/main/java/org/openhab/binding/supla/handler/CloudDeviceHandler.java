@@ -1,11 +1,13 @@
 package org.openhab.binding.supla.handler;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.OpenClosedType;
 import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.library.types.StopMoveType;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.library.types.UpDownType;
 import org.eclipse.smarthome.core.thing.Bridge;
@@ -303,6 +305,11 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
         final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
         logger.trace("Executing 0/1 command `{}`", action);
 //        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
+    }
+
+    @Override
+    protected void handleStopMoveTypeCommand(final @NonNull ChannelUID channelUID, final @NonNull StopMoveType command) throws Exception {
+        logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
     }
 
     private Optional<State> findState(pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
