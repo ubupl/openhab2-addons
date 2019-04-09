@@ -307,9 +307,33 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
 //        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
     }
 
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     @Override
-    protected void handleStopMoveTypeCommand(final @NonNull ChannelUID channelUID, final @NonNull StopMoveType command) throws Exception {
-        logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+    protected void handleStopMoveTypeCommand(final @NonNull ChannelUID channelUID, final @NonNull StopMoveType command) throws ApiException {
+        final int channelId = parseInt(channelUID.getId());
+        final pl.grzeslowski.jsupla.api.generated.model.Channel channel = queryForChannel(channelId);
+        switch (channel.getFunction().getName()) {
+            case CONTROLLINGTHEROLLERSHUTTER:
+                handleStopMoveTypeCommandOnRollerShutter(channelUID, channel, command);
+                return;
+            default:
+                logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+        }
+    }
+
+    private void handleStopMoveTypeCommandOnRollerShutter(
+            final ChannelUID channelUID,
+            final pl.grzeslowski.jsupla.api.generated.model.Channel channel,
+            final StopMoveType command) throws ApiException {
+        switch (command) {
+            case MOVE:
+                logger.trace("Do not know how to handle command `{}` on roller shutter with id `{}`", command, channelUID);
+                return;
+            case STOP:
+                final ChannelFunctionActionEnum action = ChannelFunctionActionEnum.STOP;
+                logger.trace("Sending stop action `{}` to channel with UUID `{}`", action, channelUID);
+                channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channel.getId());
+        }
     }
 
     private Optional<State> findState(pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
