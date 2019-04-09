@@ -214,6 +214,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             case CONTROLLINGTHEGATE:
             case CONTROLLINGTHEGARAGEDOOR:
                 handleOneZeroCommand(channelId, command == ON, OPEN, CLOSE);
+                return;
             default:
                 handleOneZeroCommand(channelId, command == ON, TURN_ON, TURN_OFF);
         }
@@ -300,7 +301,8 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                                       final ChannelFunctionActionEnum first,
                                       final ChannelFunctionActionEnum second) throws ApiException {
         final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
-        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
+        logger.trace("Executing 0/1 command `{}`", action);
+//        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
     }
 
     private Optional<State> findState(pl.grzeslowski.jsupla.api.generated.model.Channel channel) {
@@ -321,7 +323,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
             case CONTROLLINGTHEGATEWAYLOCK:
             case CONTROLLINGTHEGATE:
             case CONTROLLINGTHEGARAGEDOOR:
-                if (param2Present) {
+                if (param2Present || !channel.getType().isOutput()) {
                     return state.map(ChannelState::getHi).map(hi -> hi ? ON : OFF);
                 } else {
                     return empty();
