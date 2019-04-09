@@ -304,7 +304,7 @@ public final class CloudDeviceHandler extends AbstractDeviceHandler {
                                       final ChannelFunctionActionEnum second) throws ApiException {
         final ChannelFunctionActionEnum action = firstOrSecond ? first : second;
         logger.trace("Executing 0/1 command `{}`", action);
-//        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
+        channelsApi.executeAction(new ChannelExecuteActionRequest().action(action), channelId);
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
