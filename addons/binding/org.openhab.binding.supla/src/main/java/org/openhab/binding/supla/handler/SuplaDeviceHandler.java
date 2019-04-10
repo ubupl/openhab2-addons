@@ -8,6 +8,7 @@
  */
 package org.openhab.binding.supla.handler;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DecimalType;
@@ -15,6 +16,7 @@ import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.OpenClosedType;
 import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.library.types.StopMoveType;
 import org.eclipse.smarthome.core.library.types.UpDownType;
 import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -145,6 +147,11 @@ public class SuplaDeviceHandler extends AbstractDeviceHandler {
         sendCommandToSuplaServer(channelUID, new DecimalValue(command.toBigDecimal()), command);
     }
 
+    @Override
+    protected void handleStopMoveTypeCommand(final @NonNull ChannelUID channelUID, final @NonNull StopMoveType command) throws Exception {
+        logger.warn("Not handling `{}` ({}) on channel `{}`", command, command.getClass().getSimpleName(), channelUID);
+    }
+    
     @Override
     protected void internalInitialize() {
         if (getBridge() == null) {
